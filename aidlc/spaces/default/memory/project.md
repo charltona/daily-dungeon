@@ -29,7 +29,7 @@
 - Monorepo: npm workspaces (`@daily-dungeon/shared`, `@daily-dungeon/server`, `@daily-dungeon/client`)
 - Backend: Express, Socket.io, tsx
 - Frontend: React 19, Vite, Tailwind CSS, Lucide icons
-- Compute & Hosting: AWS App Runner (Unified container serving Express, Socket.io WebSockets, and built Vite static files)
+- Compute & Hosting: Amazon ECS Express Mode / Fargate with Application Load Balancer (Unified container serving Express, Socket.io WebSockets, and built Vite static files)
 - Database & ORM: PostgreSQL on AWS Aurora Serverless v2 with Drizzle ORM
 - Testing: Vitest
 
@@ -40,7 +40,7 @@
 - DECIDED: Victory / Defeat modals are manually triggered by players ("Collect Loot" / "View Summary").
 - DECIDED: Authentication architecture uses self-hosted native sessions (users, sessions tables with SHA-256 hashed tokens in HttpOnly cookies), avoiding 3rd-party SaaS (Clerk/Auth0). Players start with anonymous guest device tokens with optional direct Google/Discord OAuth linking. (2026-09-27)
 - DECIDED: Primary database storage engine is PostgreSQL on AWS Aurora Serverless v2 accessed via Drizzle ORM. Relational indexing is utilized for user/session relations and daily seed leaderboards; JSONB columns are used for flexible character inventories and combat run logs. (2026-09-27)
-- DECIDED: Cloud deployment architecture utilizes a unified single container hosted on AWS App Runner. Express serves built client static assets (`packages/client/dist`) while hosting Socket.io WebSockets and REST endpoints on a single origin, eliminating CORS issues and simplifying VPC connectivity to Aurora Serverless v2. (2026-09-27)
+- DECIDED: Cloud deployment architecture utilizes a unified single container hosted on Amazon ECS Express Mode / Fargate behind an Application Load Balancer (ALB). Express serves built client static assets (`packages/client/dist`) while hosting Socket.io WebSockets and REST endpoints on a single origin, replacing sunset App Runner with native VPC connectivity to Aurora Serverless v2. (2026-09-27)
 
 ## Forbidden
 - NEVER perform combat damage or state resolution calculations on the client.

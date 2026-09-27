@@ -1,6 +1,6 @@
-# ADR 0003: Unified Container Deployment on AWS App Runner
+# ADR 0003: Unified Container Deployment on Amazon ECS Express Mode / Fargate
 
-- **Status:** Accepted
+- **Status:** Accepted (Updated from App Runner due to AWS service deprecation)
 - **Date:** 2026-09-27
 - **Deciders:** Engineering & Product
 
@@ -13,53 +13,53 @@
 3. Hosting the client frontend (`@daily-dungeon/client`, a React + Vite SPA).
 4. Secure private network connectivity to PostgreSQL on AWS Aurora Serverless v2.
 
-We evaluated three compute and hosting topologies:
-- **Option 1: Split Architecture with AWS Amplify + ECS/App Runner** (Amplify for static client, App Runner/ECS for WebSocket server).
-- **Option 2: AWS ECS Fargate + Application Load Balancer (ALB)**.
-- **Option 3: Unified Single Container on AWS App Runner** (Node.js/Express serves static client assets, REST endpoints, and Socket.io WebSockets).
+### Deprecation Update (April 2026):
+AWS announced that **AWS App Runner is no longer accepting new customers starting April 30, 2026**, and officially recommends **Amazon ECS Express Mode** as its direct successor. Consequently, we updated our compute target to Amazon ECS Express Mode / Fargate.
 
 ---
 
 ## Decision Outcome
-We decided to adopt **Option 3: Unified Single Container on AWS App Runner**.
+We decided to adopt **Unified Single Container Deployment on Amazon ECS Express Mode / Fargate** behind an Application Load Balancer (ALB).
 
-### 1. Rationale & Architecture
+### 1. Architecture Topology
 
 ```
-                  ┌──────────────────────────────────────────┐
-                  │              AWS App Runner              │
-                  │                                          │
-                  │   ┌───────────────────────────────────┐  │
-                  │   │      Express Server (:3001)       │  │
-Client Browser ───┼──►│                                   │  │
-(Mobile / Web)    │   │  • GET /*  ➔ packages/client/dist │  │
-                  │   │  • /api/*  ➔ Auth & Leaderboards  │  │
-                  │   │  • /socket.io/* ➔ Game Engine     │  │
-                  │   └─────────────────┬─────────────────┘  │
-                  └─────────────────────┼────────────────────┘
-                                        │ (AWS App Runner VPC Connector)
-                                        ▼
-                  ┌──────────────────────────────────────────┐
-                  │        AWS Aurora Serverless v2          │
-                  │         (Private Subnet / VPC)           │
-                  └──────────────────────────────────────────┘
+                  ┌────────────────────────────────────────────────────────┐
+                  │                 AWS VPC (Virtual Cloud)                │
+                  │                                                        │
+                  │   ┌────────────────────────────────────────────────┐   │
+Client Browser ───┼──►│        Application Load Balancer (ALB)         │   │
+(HTTPS / WSS)     │   │      (SSL Termination & WebSocket Support)     │   │
+                  │   └───────────────────────┬────────────────────────┘   │
+                  │                           │                            │
+                  │   ┌───────────────────────▼────────────────────────┐   │
+                  │   │        Amazon ECS Fargate (Express Mode)       │   │
+                  │   │                                                │   │
+                  │   │   • Express serves React: packages/client/dist │   │
+                  │   │   • Socket.io WebSockets: Game Engine          │   │
+                  │   │   • REST API: Auth & Leaderboards              │   │
+                  │   └───────────────────────┬────────────────────────┘   │
+                  │                           │ (Private Subnet)           │
+                  │   ┌───────────────────────▼────────────────────────┐   │
+                  │   │            AWS Aurora Serverless v2            │   │
+                  │   │               (PostgreSQL DB)                  │   │
+                  │   └────────────────────────────────────────────────┘   │
+                  └────────────────────────────────────────────────────────┘
 ```
 
-#### Why AWS App Runner Won:
-1. **Native WebSocket Support:** App Runner maintains long-lived TCP/WebSocket connections without the 30-second timeouts inherent to API Gateway or Lambda.
-2. **Zero-CORS & Single-Origin Simplicity:** Because the React bundle is served from the same origin as the API and WebSockets, cross-origin resource sharing (CORS), cross-domain cookie restrictions, and `SameSite` cookie issues on mobile browsers are completely eliminated.
-3. **Private VPC Connector:** App Runner connects seamlessly to private VPC subnets to reach Aurora Serverless v2 with zero public IP exposure for the database.
-4. **Git-Driven Automated Deployments:** App Runner connects directly to GitHub. Pushing to `main` triggers a multi-stage Docker build and rolls out with zero downtime.
-5. **Operational Simplicity:** Eliminates the complexity of managing an Application Load Balancer (ALB), Target Groups, Task Definitions, and ECS cluster infrastructure for early-stage development.
+#### Why Amazon ECS Express Mode / Fargate Won:
+1. **Tier-1 Flagship Stability:** Amazon ECS and AWS Fargate are core, permanent AWS services with zero sunset risk.
+2. **Native WebSocket Support:** The Application Load Balancer (ALB) natively supports HTTP/1.1 WebSockets (`Upgrade: websocket`) with configurable stickiness and idle timeouts.
+3. **Zero-CORS & Single-Origin Simplicity:** Serving both static React assets and WebSockets/REST from the same origin completely eliminates CORS and cross-domain mobile cookie issues.
+4. **Direct Private VPC Integration:** Because Fargate tasks run directly inside the VPC, they communicate privately with Aurora Serverless v2 across private subnets with zero public database exposure.
+5. **Express Mode Automation:** ECS Express Mode collapses the complexity of manually creating Task Definitions, Target Groups, Auto-scaling policies, and Security Groups into a streamlined, automated deployment.
 
 ---
 
-### 2. Multi-Stage Dockerfile Blueprint
-
-The deployment uses a single, lightweight multi-stage Dockerfile:
+### 2. Multi-Stage Monorepo Dockerfile Blueprint
 
 ```dockerfile
-# Stage 1: Build Shared, Server, and Client
+# Stage 1: Build Monorepo (Shared, Server, and Client)
 FROM node:24-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
@@ -71,7 +71,7 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-# Stage 2: Minimal Runtime Container
+# Stage 2: Minimal Production Runtime
 FROM node:24-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
@@ -91,22 +91,33 @@ EXPOSE 3001
 CMD ["node", "packages/server/dist/server.js"]
 ```
 
-### 3. Server Static Hosting Integration
-
-In `packages/server/src/server.ts`, when running in production:
+### 3. AWS CDK Construct Pattern
+In [`infra/lib/infra-stack.ts`](file:///g:/Projects/daily-dungeon/infra/lib/infra-stack.ts), the service is provisioned cleanly using `aws-cdk-lib/aws-ecs-patterns`:
 ```ts
-if (process.env.NODE_ENV === 'production') {
-  const clientDist = path.join(__dirname, '../../client/dist');
-  app.use(express.static(clientDist));
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(clientDist, 'index.html'));
-  });
-}
+import * as ec2 from 'aws-cdk-lib/aws-ec2';
+import * as ecs from 'aws-cdk-lib/aws-ecs';
+import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
+
+// Application Load Balanced Fargate Service
+const service = new ecsPatterns.ApplicationLoadBalancedFargateService(this, 'DailyDungeonService', {
+  vpc,
+  memoryLimitMiB: 1024,
+  cpu: 512,
+  desiredCount: 1,
+  taskImageOptions: {
+    image: ecs.ContainerImage.fromAsset('../'), // Builds root Dockerfile
+    containerPort: 3001,
+    environment: {
+      NODE_ENV: 'production',
+    },
+  },
+  publicLoadBalancer: true,
+});
 ```
 
 ---
 
 ## Consequences
-- **Positive:** Single URL, single deployment artifact, zero CORS errors, automatic SSL certificates.
-- **Positive:** Low monthly operational overhead with fine-grained CPU/memory auto-scaling.
-- **Positive:** Clean path to split the frontend onto a dedicated CDN (CloudFront / Amplify) later if global asset traffic justifies it, with zero application code refactoring.
+- **Positive:** Future-proof architecture backed by Amazon's flagship container orchestration engine.
+- **Positive:** Native ALB support for WebSockets and custom domain SSL certificates.
+- **Positive:** Private VPC security between compute and database.

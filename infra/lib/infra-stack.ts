@@ -31,6 +31,7 @@ export class InfraStack extends cdk.Stack {
         memoryLimitMiB: 512,
         cpu: 256,
         desiredCount: 1,
+        circuitBreaker: { rollback: true },
         taskImageOptions: {
           image: ecs.ContainerImage.fromAsset(monorepoRoot),
           containerPort: 3001,

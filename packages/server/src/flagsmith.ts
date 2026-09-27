@@ -1,9 +1,5 @@
 import { Flagsmith, DefaultFlag } from '@flagsmith/nodejs';
-import {
-  DEFAULT_FEATURE_FLAG_VALUES,
-  FEATURE_FLAGS,
-  FeatureFlagKey,
-} from '@daily-dungeon/shared';
+import { FeatureFlagDictionary, FeatureFlagValue } from '@daily-dungeon/shared';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -19,12 +15,8 @@ if (!serverKey) {
 export const flagsmith = serverKey
   ? new Flagsmith({
       environmentKey: serverKey,
-      defaultFlagHandler: (featureName: string) => {
-        const fallback = DEFAULT_FEATURE_FLAG_VALUES[featureName] || {
-          enabled: false,
-          value: null,
-        };
-        return new DefaultFlag(fallback.value, fallback.enabled);
+      defaultFlagHandler: () => {
+        return new DefaultFlag(null, false);
       },
     })
   : null;
@@ -33,11 +25,11 @@ export const flagsmith = serverKey
  * Check if a specific feature flag is enabled in Flagsmith.
  */
 export async function isFeatureEnabled(
-  featureName: FeatureFlagKey | string,
+  featureName: string,
   identity?: string
 ): Promise<boolean> {
   if (!flagsmith) {
-    return DEFAULT_FEATURE_FLAG_VALUES[featureName]?.enabled ?? false;
+    return false;
   }
   try {
     const flags = identity
@@ -46,57 +38,55 @@ export async function isFeatureEnabled(
     return flags.isFeatureEnabled(featureName);
   } catch (err) {
     console.warn(`[Flagsmith] Warn checking flag "${featureName}":`, err);
-    return DEFAULT_FEATURE_FLAG_VALUES[featureName]?.enabled ?? false;
+    return false;
   }
 }
 
 /**
  * Get the evaluated value of a feature flag.
  */
-export async function getFeatureValue<T = any>(
-  featureName: FeatureFlagKey | string,
+export async function getFeatureValue<T = FeatureFlagValue>(
+  featureName: string,
   identity?: string
-): Promise<T> {
+): Promise<T | null> {
   if (!flagsmith) {
-    return (DEFAULT_FEATURE_FLAG_VALUES[featureName]?.value as T) ?? (null as unknown as T);
+    return null;
   }
   try {
     const flags = identity
       ? await flagsmith.getIdentityFlags(identity)
       : await flagsmith.getEnvironmentFlags();
-    return flags.getFeatureValue(featureName) as T;
+    return (flags.getFeatureValue(featureName) as T) ?? null;
   } catch (err) {
     console.warn(`[Flagsmith] Warn getting value for flag "${featureName}":`, err);
-    return (DEFAULT_FEATURE_FLAG_VALUES[featureName]?.value as T) ?? (null as unknown as T);
+    return null;
   }
 }
 
 /**
  * Retrieve all feature flags as a dictionary of { enabled, value }.
  */
-export async function getAllFeatureFlags(identity?: string): Promise<
-  Record<string, { enabled: boolean; value: any }>
-> {
+export async function getAllFeatureFlags(identity?: string): Promise<FeatureFlagDictionary> {
   if (!flagsmith) {
-    return DEFAULT_FEATURE_FLAG_VALUES;
+    return {};
   }
   try {
     const flags = identity
       ? await flagsmith.getIdentityFlags(identity)
       : await flagsmith.getEnvironmentFlags();
     const all = flags.allFlags();
-    const result: Record<string, { enabled: boolean; value: any }> = {};
+    const result: FeatureFlagDictionary = {};
 
     for (const flag of all) {
       result[flag.featureName] = {
         enabled: flag.enabled,
-        value: flag.value,
+        value: flag.value as FeatureFlagValue,
       };
     }
     return result;
   } catch (err) {
     console.warn('[Flagsmith] Warn retrieving all feature flags:', err);
-    return DEFAULT_FEATURE_FLAG_VALUES;
+    return {};
   }
 }
 

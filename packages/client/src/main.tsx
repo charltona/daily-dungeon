@@ -2,7 +2,6 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import flagsmith from '@flagsmith/flagsmith';
 import { FlagsmithProvider } from '@flagsmith/flagsmith/react';
-import { DEFAULT_FEATURE_FLAG_VALUES } from '@daily-dungeon/shared';
 import App from './App.js';
 import './index.css';
 
@@ -15,7 +14,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       options={{
         environmentID,
         preventFetch: !environmentID,
-        defaultFlags: DEFAULT_FEATURE_FLAG_VALUES as any,
         cacheFlags: true,
       }}
     >

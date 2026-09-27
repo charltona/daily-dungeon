@@ -2,19 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Shield, Sparkles, Sword, Users, Play, Copy, Check, ShieldCheck } from 'lucide-react';
 import { ClassType, CharacterSheet, CLASS_ABILITIES, CLASS_BASE_STATS, RoomState } from '@daily-dungeon/shared';
 
-export interface FeatureFlagProps {
-  christmasLogo?: boolean;
-  communityStats?: boolean;
-  infoMessage?: { enabled: boolean; value: string };
-  enableAchievements?: boolean;
-}
-
 interface LobbyScreenProps {
   roomState: RoomState | null;
   onJoinRoom: (roomId: string, name: string, classType: ClassType) => void;
   onStartGame: (roomId: string) => void;
   currentPlayerId: string;
-  flags?: FeatureFlagProps;
 }
 
 export const LobbyScreen: React.FC<LobbyScreenProps> = ({
@@ -22,7 +14,6 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
   onJoinRoom,
   onStartGame,
   currentPlayerId,
-  flags,
 }) => {
   const [selectedClass, setSelectedClass] = useState<ClassType>('warrior');
   const [roomId, setRoomId] = useState<string>(() => {
@@ -218,52 +209,13 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
 
   return (
     <div className="max-w-2xl mx-auto p-6 bg-dungeon-card border border-dungeon-border rounded-2xl shadow-2xl mt-8">
-      {/* Flagsmith Feature Flag: info_message announcement banner */}
-      {flags?.infoMessage?.enabled && (
-        <div className="mb-5 p-3 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-300 text-xs font-semibold flex items-center justify-between gap-2 shadow-lg animate-in fade-in">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-400 flex-shrink-0" />
-            <span>{flags.infoMessage.value}</span>
-          </div>
-          <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40 font-bold">
-            Notice
-          </span>
-        </div>
-      )}
-
       <div className="text-center mb-6">
         <h1 className="text-3xl font-black text-amber-400 tracking-tight flex items-center justify-center gap-2">
-          {flags?.christmasLogo ? (
-            <>
-              <span className="animate-pulse">🎄</span>
-              <span>DAILY DUNGEON</span>
-              <span className="animate-pulse">❄️</span>
-            </>
-          ) : (
-            <span>DAILY DUNGEON</span>
-          )}
+          <span>DAILY DUNGEON</span>
         </h1>
         <p className="text-sm text-slate-300 mt-1">
           Synchronous co-op tactical micro-RPG. 2 encounters, untimed coordination, universal daily seed.
         </p>
-
-        {/* Flagsmith Feature Flag: community_stats */}
-        {flags?.communityStats !== false && (
-          <div className="mt-4 p-3 rounded-xl bg-dungeon-darker/80 border border-dungeon-border grid grid-cols-3 divide-x divide-dungeon-border text-center text-xs">
-            <div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase">Universal Seed</div>
-              <div className="font-mono font-bold text-amber-400 mt-0.5">#DAILY-CRYPT</div>
-            </div>
-            <div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase">Crypts Conquered</div>
-              <div className="font-mono font-bold text-emerald-400 mt-0.5">148 Cleared</div>
-            </div>
-            <div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase">Party Format</div>
-              <div className="font-mono font-bold text-indigo-400 mt-0.5">1-4 Co-Op</div>
-            </div>
-          </div>
-        )}
       </div>
 
       <form onSubmit={handleJoin} className="space-y-5">
@@ -335,37 +287,6 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
             ))}
           </div>
         </div>
-
-        {/* Flagsmith Feature Flag: enable_achievements */}
-        {flags?.enableAchievements !== false && (
-          <div className="bg-dungeon-darker/60 p-3.5 rounded-xl border border-dungeon-border">
-            <div className="text-xs font-bold uppercase text-slate-400 mb-2 flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-amber-400">
-                <Sparkles className="w-3.5 h-3.5" />
-                Daily Achievements
-              </span>
-              <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/80 font-bold">
-                Feature Active
-              </span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
-              <div className="p-2 rounded bg-slate-900/80 border border-slate-800 flex items-center gap-2">
-                <span className="text-base">🏆</span>
-                <div>
-                  <div className="font-bold text-amber-300">Crypt Conqueror</div>
-                  <div className="text-[10px] text-slate-400">Defeat Crypt Overseer</div>
-                </div>
-              </div>
-              <div className="p-2 rounded bg-slate-900/80 border border-slate-800 flex items-center gap-2">
-                <span className="text-base">⚔️</span>
-                <div>
-                  <div className="font-bold text-slate-200">First Blood</div>
-                  <div className="text-[10px] text-slate-400">Slay Skeletal Vanguard</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Submit */}
         <button

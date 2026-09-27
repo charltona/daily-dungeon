@@ -139,28 +139,11 @@ export const BASE_ENEMIES = {
   },
 };
 
-export const FEATURE_FLAGS = {
-  CHRISTMAS_LOGO: 'christmas_logo',
-  COMMUNITY_STATS: 'community_stats',
-  INFO_MESSAGE: 'info_message',
-  ENABLE_ACHIEVEMENTS: 'enable_achievements',
-} as const;
+export type FeatureFlagValue = string | number | boolean | null;
 
-export type FeatureFlagKey = typeof FEATURE_FLAGS[keyof typeof FEATURE_FLAGS];
-
-export interface FeatureFlagValueMap {
-  [FEATURE_FLAGS.CHRISTMAS_LOGO]: boolean;
-  [FEATURE_FLAGS.COMMUNITY_STATS]: boolean;
-  [FEATURE_FLAGS.INFO_MESSAGE]: string;
-  [FEATURE_FLAGS.ENABLE_ACHIEVEMENTS]: boolean;
+export interface FeatureFlagState {
+  enabled: boolean;
+  value?: FeatureFlagValue;
 }
 
-export const DEFAULT_FEATURE_FLAG_VALUES: Record<
-  string,
-  { enabled: boolean; value: string | boolean | number | null }
-> = {
-  [FEATURE_FLAGS.CHRISTMAS_LOGO]: { enabled: false, value: true },
-  [FEATURE_FLAGS.COMMUNITY_STATS]: { enabled: true, value: true },
-  [FEATURE_FLAGS.INFO_MESSAGE]: { enabled: false, value: '🏆 Achievements are here' },
-  [FEATURE_FLAGS.ENABLE_ACHIEVEMENTS]: { enabled: true, value: true },
-};
+export type FeatureFlagDictionary = Record<string, FeatureFlagState>;

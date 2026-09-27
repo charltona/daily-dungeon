@@ -41,4 +41,3 @@ test('InfraStack synthesizes VPC, ECS Cluster, and ALB Fargate Service', () => {
     ],
   });
 });
-

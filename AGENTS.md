@@ -81,3 +81,17 @@ Before declaring ANY story or task complete, you MUST execute:
 1. `npm test --workspace=@daily-dungeon/shared` — all unit tests must pass.
 2. `npm run build` — must compile with 0 TypeScript or bundler errors across all workspaces.
 3. Process hygiene check on ports `3001` and `5173`.
+
+## 3. Pre-Verified Environment & Integrations (Fast Path)
+Do NOT waste turns probing or re-checking the following verified facts:
+- **Git & GitHub:** Git is initialized with default branch `main`. Remote `origin` is `git@github.com:charltona/daily-dungeon.git`. SSH authentication is pre-verified for GitHub user `charltona`. Push directly to `origin main`.
+- **Trello Board & Lists:**
+  - Board: `Daily Dungeon` (`ari:cloud:trello::board/workspace/60c9a8ac9046af89b9dd8514/6ab88a785ef848c8b5667a5a`)
+  - Backlog List ID: `ari:cloud:trello::list/workspace/60c9a8ac9046af89b9dd8514/6ab88a7d14244044c587a217`
+  - In Progress List ID: `ari:cloud:trello::list/workspace/60c9a8ac9046af89b9dd8514/6ab88a8195827b1cf33d7920`
+  - Done List ID: `ari:cloud:trello::list/workspace/60c9a8ac9046af89b9dd8514/6ab88a83477b33376c54b926`
+- **Runtimes & Ports:**
+  - Node.js `v24.21.0` LTS via `nvm`.
+  - Backend server on `0.0.0.0:3001`. Frontend Vite on `0.0.0.0:5173`. LAN IP: `192.168.50.216`.
+  - AI-DLC CLI v2.10.0 binary: `C:\Users\Aaron\AppData\Local\aidlc\bin\aidlc.cmd`.
+

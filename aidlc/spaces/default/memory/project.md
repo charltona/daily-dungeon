@@ -51,3 +51,15 @@
 - ALWAYS keep `packages/shared` completely pure and testable with Vitest.
 - ALWAYS test network binding on `0.0.0.0` (accessible over local Wi-Fi / LAN).
 - ALWAYS check server port `3001` and client port `5173` process hygiene when restarting servers.
+
+## Environment & Integrations (Pre-Verified Facts)
+- **Git & GitHub:** Git is initialized with default branch `main`. Remote `origin` is `git@github.com:charltona/daily-dungeon.git`. SSH authentication is pre-verified for GitHub user `charltona`. Do not waste turns probing SSH or re-checking git installation.
+- **Trello Board & Workflow ARIs:**
+  - Board: `Daily Dungeon` (`ari:cloud:trello::board/workspace/60c9a8ac9046af89b9dd8514/6ab88a785ef848c8b5667a5a`)
+  - Backlog List ID: `ari:cloud:trello::list/workspace/60c9a8ac9046af89b9dd8514/6ab88a7d14244044c587a217`
+  - In Progress List ID: `ari:cloud:trello::list/workspace/60c9a8ac9046af89b9dd8514/6ab88a8195827b1cf33d7920`
+  - Done List ID: `ari:cloud:trello::list/workspace/60c9a8ac9046af89b9dd8514/6ab88a83477b33376c54b926`
+- **Runtimes & Tooling:**
+  - Node.js v24 LTS (`v24.21.0`).
+  - AI-DLC CLI installed at `C:\Users\Aaron\AppData\Local\aidlc\bin\aidlc.cmd`.
+  - Ports: Backend Express/Socket.io `3001` (0.0.0.0), Frontend Vite `5173` (0.0.0.0). LAN IP: `192.168.50.216`.

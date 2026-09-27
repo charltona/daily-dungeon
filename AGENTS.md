@@ -78,9 +78,13 @@ Commit the `aidlc/` workspace tree — the record (state, the per-clone audit sh
 
 ## 2. Mandatory Self-Verification Loop
 Before declaring ANY story or task complete, you MUST execute:
-1. `npm test --workspace=@daily-dungeon/shared` — all unit tests must pass.
-2. `npm run build` — must compile with 0 TypeScript or bundler errors across all workspaces.
-3. Process hygiene check on ports `3001` and `5173`.
+1. `npm run verify:local` — executes the comprehensive autonomous verification suite:
+   - Shared combat unit tests (`npm test --workspace=@daily-dungeon/shared`)
+   - Monorepo full build (`npm run build`)
+   - PostgreSQL database connectivity and Drizzle schema migrations (`npm run db:check`, `npm run db:migrate`)
+   - AWS CDK infrastructure synthesis (`npm run cdk:synth`)
+   - Docker compose configuration parity (`docker compose config`)
+2. Process hygiene check on ports `3001` and `5173`.
 
 ## 3. Pre-Verified Environment & Integrations (Fast Path)
 Do NOT waste turns probing or re-checking the following verified facts:

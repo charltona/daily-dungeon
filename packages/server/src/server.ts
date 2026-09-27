@@ -11,13 +11,24 @@ import {
 } from '@daily-dungeon/shared';
 import { RoomManager } from './room-manager.js';
 
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { db, dailySeeds } from './db/index.js';
+import { checkDatabaseHealth } from './db/check.js';
+import { eq } from 'drizzle-orm';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const clientDistPath = path.resolve(__dirname, '../../client/dist');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
 
-// Daily Dungeon Seed (deterministic daily rotation)
+// Daily Dungeon Seed (deterministic daily rotation fallback)
 function getDailyDungeonInfo() {
   const today = new Date().toISOString().slice(0, 10);
   return {
@@ -29,13 +40,56 @@ function getDailyDungeonInfo() {
   };
 }
 
-app.get('/api/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', uptime: process.uptime() });
+app.get('/api/health', async (req: Request, res: Response) => {
+  let dbStatus = 'disconnected';
+  try {
+    const isHealthy = await checkDatabaseHealth();
+    dbStatus = isHealthy ? 'connected' : 'error';
+  } catch {
+    dbStatus = 'unavailable';
+  }
+  res.json({
+    status: 'ok',
+    uptime: process.uptime(),
+    database: dbStatus,
+  });
 });
 
-app.get('/api/daily', (req: Request, res: Response) => {
+app.get('/api/daily', async (req: Request, res: Response) => {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const [seed] = await db
+      .select()
+      .from(dailySeeds)
+      .where(eq(dailySeeds.dateKey, today))
+      .limit(1);
+    if (seed) {
+      return res.json({
+        date: seed.dateKey,
+        dungeonName: 'The Sunken Crypt',
+        description: 'A subterranean labyrinth guarded by restless skeletal vanguards and ruled by the Crypt Overseer.',
+        minionName: 'Skeletal Vanguard',
+        bossName: seed.bossName,
+        seedNumber: seed.seedNumber,
+        modifiers: seed.modifiersJson,
+      });
+    }
+  } catch (err) {
+    // Non-fatal fallback to deterministic daily generator
+  }
   res.json(getDailyDungeonInfo());
 });
+
+// Production Single-Container SPA Serving
+if (fs.existsSync(clientDistPath)) {
+  app.use(express.static(clientDistPath));
+  app.get('*', (req: Request, res: Response, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/socket.io')) {
+      return next();
+    }
+    res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+}
 
 const server = http.createServer(app);
 

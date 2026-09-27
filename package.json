@@ -10,10 +10,17 @@
     "dev:server": "npm run dev --workspace=@daily-dungeon/server",
     "dev:client": "npm run dev --workspace=@daily-dungeon/client",
     "build": "npm run build --workspace=@daily-dungeon/shared && npm run build --workspace=@daily-dungeon/server && npm run build --workspace=@daily-dungeon/client",
-    "test": "npm run test --workspace=@daily-dungeon/shared"
+    "test": "npm run test --workspace=@daily-dungeon/shared",
+    "db:generate": "npm run db:generate --workspace=@daily-dungeon/server",
+    "db:migrate": "npm run db:migrate --workspace=@daily-dungeon/server",
+    "db:seed": "npm run db:seed --workspace=@daily-dungeon/server",
+    "db:check": "npm run db:check --workspace=@daily-dungeon/server",
+    "cdk:synth": "npx --prefix infra cdk synth",
+    "verify:local": "node scripts/verify-local.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
+    "drizzle-orm": "^0.45.3",
     "typescript": "^5.7.3"
   }
 }

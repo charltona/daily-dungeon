@@ -1,0 +1,12 @@
+node_modules
+dist
+dist-ssr
+.git
+.cursor
+aidlc
+infra/cdk.out
+infra/node_modules
+*.log
+.env
+.env.*
+!.env.example

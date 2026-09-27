@@ -6,6 +6,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "test": "node --test dist/flagsmith.test.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx src/db/seed.ts",
@@ -13,6 +14,7 @@
   },
   "dependencies": {
     "@daily-dungeon/shared": "*",
+    "@flagsmith/nodejs": "^9.0.3",
     "cors": "^2.8.5",
     "dotenv": "^18.0.4",
     "drizzle-orm": "^0.45.3",

@@ -57,3 +57,16 @@ test('Combat Engine - Initiative Sorting and Dead Actor Rule', () => {
   assert.ok(batch.orderedEvents.length > 0);
   assert.ok(batch.finalRoomState.enemy!.currentHp < enemy.maxHp);
 });
+
+test('Feature Flags - Constants and Default Definitions', async () => {
+  const { FEATURE_FLAGS, DEFAULT_FEATURE_FLAG_VALUES } = await import('./index.js');
+  assert.equal(FEATURE_FLAGS.CHRISTMAS_LOGO, 'christmas_logo');
+  assert.equal(FEATURE_FLAGS.COMMUNITY_STATS, 'community_stats');
+  assert.equal(FEATURE_FLAGS.INFO_MESSAGE, 'info_message');
+  assert.equal(FEATURE_FLAGS.ENABLE_ACHIEVEMENTS, 'enable_achievements');
+
+  assert.equal(DEFAULT_FEATURE_FLAG_VALUES[FEATURE_FLAGS.CHRISTMAS_LOGO].enabled, false);
+  assert.equal(DEFAULT_FEATURE_FLAG_VALUES[FEATURE_FLAGS.COMMUNITY_STATS].enabled, true);
+  assert.equal(DEFAULT_FEATURE_FLAG_VALUES[FEATURE_FLAGS.INFO_MESSAGE].enabled, false);
+  assert.equal(DEFAULT_FEATURE_FLAG_VALUES[FEATURE_FLAGS.ENABLE_ACHIEVEMENTS].enabled, true);
+});

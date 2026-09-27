@@ -86,9 +86,42 @@ Before declaring ANY story or task complete, you MUST execute:
    - Docker compose configuration parity (`docker compose config`)
 2. Process hygiene check on ports `3001` and `5173`.
 
-## 3. Pre-Verified Environment & Integrations (Fast Path)
+## 3. Mandatory Worktree Sandbox & PR Protocol (Multi-Agent)
+Because multiple agents operate concurrently on this repository, agents MUST NOT work, edit, or commit code directly inside the primary root tree (`G:\Projects\daily-dungeon`). Every agent must be sandboxed in its own dedicated Git worktree:
+
+1. **Mandatory Worktree Sandbox:**
+   - Every feature, story, or bug fix MUST be developed inside an isolated Git worktree (e.g. `..\daily-dungeon-worktrees\<feature-slug>`).
+   - Create and initialize the worktree using the automated helper:
+     ```bash
+     npm run worktree:create <feature-slug>
+     ```
+     This automatically creates `..\daily-dungeon-worktrees\<feature-slug>`, checks out branch `feat/<feature-slug>` off latest `origin/main`, copies `.env`, and links dependencies for instant readiness.
+   - Agents MUST be launched in or operate within that sandboxed directory. NEVER commit or dirty the primary root tree.
+2. **Pre-Push Autonomous Verification:**
+   - Inside the worktree, run the autonomous verification suite:
+     ```bash
+     npm run verify:local
+     ```
+   - Ensure a clean working tree with only relevant, intentional file modifications.
+3. **Push Feature Branch & Open Pull Request:**
+   - Push the feature branch to remote `origin`:
+     ```bash
+     git push -u origin feat/<feature-slug>
+     ```
+   - Open a Pull Request targeting `main` with a clear summary of changes, motivation, and verification results.
+4. **Wait for Human / Peer Review (No Self-Merging):**
+   - Agents MUST NOT merge their own Pull Requests into `main`.
+   - Once the PR is submitted, stop and wait for review and explicit approval before any merge takes place.
+5. **Post-Merge Worktree Teardown:**
+   - After the PR is merged, remove the worktree from the primary repo:
+     ```bash
+     npm run worktree:remove <feature-slug>
+     ```
+
+
+## 4. Pre-Verified Environment & Integrations (Fast Path)
 Do NOT waste turns probing or re-checking the following verified facts:
-- **Git & GitHub:** Git is initialized with default branch `main`. Remote `origin` is `git@github.com:charltona/daily-dungeon.git`. SSH authentication is pre-verified for GitHub user `charltona`. Push directly to `origin main`.
+- **Git & GitHub:** Git is initialized with default branch `main`. Remote `origin` is `git@github.com:charltona/daily-dungeon.git`. SSH authentication is pre-verified for GitHub user `charltona`. Push to dedicated feature branches only; pushing directly to `main` is strictly forbidden.
 - **Trello Board & Lists:**
   - Board: `Daily Dungeon` (`ari:cloud:trello::board/workspace/60c9a8ac9046af89b9dd8514/6ab88a785ef848c8b5667a5a`)
   - Backlog List ID: `ari:cloud:trello::list/workspace/60c9a8ac9046af89b9dd8514/6ab88a7d14244044c587a217`
@@ -98,4 +131,5 @@ Do NOT waste turns probing or re-checking the following verified facts:
   - Node.js `v24.21.0` LTS via `nvm`.
   - Backend server on `0.0.0.0:3001`. Frontend Vite on `0.0.0.0:5173`. LAN IP: `192.168.50.216`.
   - AI-DLC CLI v2.10.0 binary: `C:\Users\Aaron\AppData\Local\aidlc\bin\aidlc.cmd`.
+
 

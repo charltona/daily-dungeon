@@ -27,6 +27,7 @@ services:
       NODE_ENV: production
       PORT: 3001
       DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-daily_dungeon_dev}
+      FLAGSMITH_SERVER_KEY: ${FLAGSMITH_SERVER_KEY:-}
     ports:
       - "${PORT:-3001}:3001"
     depends_on:

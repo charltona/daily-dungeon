@@ -5,7 +5,9 @@ import {
   createCharacter,
   ResolutionBatch,
   RoomState,
+  FEATURE_FLAGS,
 } from '@daily-dungeon/shared';
+import { useFlags, useFlagsmith } from '@flagsmith/flagsmith/react';
 import { Trophy, Skull, Sparkles } from 'lucide-react';
 import { Header } from './components/Header.js';
 import { EnemyCard } from './components/EnemyCard.js';
@@ -16,6 +18,23 @@ import { LobbyScreen } from './components/LobbyScreen.js';
 import { EndGameScreen } from './components/EndGameScreen.js';
 
 export function App() {
+  const flagsmith = useFlagsmith();
+  const flags = useFlags([
+    FEATURE_FLAGS.CHRISTMAS_LOGO,
+    FEATURE_FLAGS.COMMUNITY_STATS,
+    FEATURE_FLAGS.INFO_MESSAGE,
+    FEATURE_FLAGS.ENABLE_ACHIEVEMENTS,
+  ]);
+
+  const isChristmasLogo = flags[FEATURE_FLAGS.CHRISTMAS_LOGO]?.enabled ?? false;
+  const isCommunityStats = flags[FEATURE_FLAGS.COMMUNITY_STATS]?.enabled ?? true;
+  const isInfoMessage = flags[FEATURE_FLAGS.INFO_MESSAGE]?.enabled ?? false;
+  const infoMessageValue = String(
+    flags[FEATURE_FLAGS.INFO_MESSAGE]?.value || '🏆 Achievements are here'
+  );
+  const isAchievementsEnabled =
+    flags[FEATURE_FLAGS.ENABLE_ACHIEVEMENTS]?.enabled ?? true;
+
   const [socket, setSocket] = useState<Socket | null>(null);
   const [roomState, setRoomState] = useState<RoomState | null>(null);
   const [currentPlayerId] = useState<string>(() => {
@@ -24,6 +43,15 @@ export function App() {
   const [activeActorId, setActiveActorId] = useState<string | undefined>(undefined);
   const [activePlaybackLog, setActivePlaybackLog] = useState<string[]>([]);
   const [isEndModalOpen, setIsEndModalOpen] = useState(false);
+
+  // Identify player in Flagsmith
+  useEffect(() => {
+    if (flagsmith && currentPlayerId) {
+      flagsmith.identify(currentPlayerId).catch((err) => {
+        console.warn('[Flagsmith] Failed to identify user:', err);
+      });
+    }
+  }, [currentPlayerId, flagsmith]);
 
   // Socket initialization
   useEffect(() => {
@@ -125,6 +153,15 @@ export function App() {
           onJoinRoom={handleJoinRoom}
           onStartGame={handleStartGame}
           currentPlayerId={currentPlayerId}
+          flags={{
+            christmasLogo: isChristmasLogo,
+            communityStats: isCommunityStats,
+            infoMessage: {
+              enabled: isInfoMessage,
+              value: infoMessageValue,
+            },
+            enableAchievements: isAchievementsEnabled,
+          }}
         />
       </div>
     );
@@ -133,7 +170,7 @@ export function App() {
   return (
     <div className="h-[100dvh] max-h-[100dvh] bg-dungeon-darkest text-slate-100 flex flex-col justify-between overflow-hidden select-none">
       {/* 1. Slim Header */}
-      <Header roomState={roomState} />
+      <Header roomState={roomState} christmasLogo={isChristmasLogo} />
 
       {/* Main Single-Screen Battle Deck */}
       <main className="max-w-md mx-auto w-full px-2.5 py-1.5 flex-1 flex flex-col justify-between gap-1.5 overflow-hidden">

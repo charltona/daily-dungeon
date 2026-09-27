@@ -4,9 +4,10 @@ import { RoomState } from '@daily-dungeon/shared';
 
 interface HeaderProps {
   roomState: RoomState;
+  christmasLogo?: boolean;
 }
 
-export const Header: React.FC<HeaderProps> = ({ roomState }) => {
+export const Header: React.FC<HeaderProps> = ({ roomState, christmasLogo }) => {
   const isCombat = roomState.status === 'COMBAT_INPUT';
   const isResolving = roomState.status === 'COMBAT_RESOLUTION';
   const isTransition = roomState.status === 'STAGE_TRANSITION';
@@ -19,7 +20,8 @@ export const Header: React.FC<HeaderProps> = ({ roomState }) => {
     <header className="bg-dungeon-card/90 border-b border-dungeon-border px-3 py-2 flex items-center justify-between gap-2 shadow-sm text-xs">
       {/* Room & Stage */}
       <div className="flex items-center gap-2">
-        <span className="font-mono font-bold text-amber-400 bg-dungeon-darker px-2 py-0.5 rounded border border-dungeon-border">
+        <span className="font-mono font-bold text-amber-400 bg-dungeon-darker px-2 py-0.5 rounded border border-dungeon-border flex items-center gap-1">
+          {christmasLogo && <span className="text-xs">🎄</span>}
           {roomState.roomId}
         </span>
         <span className="text-[11px] font-semibold text-slate-300">

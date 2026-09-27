@@ -15,8 +15,11 @@
     "db:migrate": "npm run db:migrate --workspace=@daily-dungeon/server",
     "db:seed": "npm run db:seed --workspace=@daily-dungeon/server",
     "db:check": "npm run db:check --workspace=@daily-dungeon/server",
-    "cdk:synth": "npx --prefix infra cdk synth",
-    "verify:local": "node scripts/verify-local.mjs"
+    "cdk:synth": "npm --prefix infra run cdk -- synth",
+    "verify:local": "node scripts/verify-local.mjs",
+    "worktree:create": "node scripts/worktree.mjs create",
+    "worktree:list": "node scripts/worktree.mjs list",
+    "worktree:remove": "node scripts/worktree.mjs remove"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

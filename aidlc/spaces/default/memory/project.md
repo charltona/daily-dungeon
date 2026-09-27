@@ -6,6 +6,7 @@
 ## Way of Working
 - All feature work follows the 3-phase AI-DLC lifecycle: Inception (story & spec approval) -> Construction (test-driven implementation) -> Operations/Audit.
 - Mobile-first portrait priority: every combat screen MUST fit completely within `100dvh` without vertical page scrolling.
+- Multi-Agent Worktree Sandbox: Multiple concurrent agents are active. Agents MUST NOT work, edit, or commit directly in the primary root repository. Every feature or task MUST be developed in its own dedicated Git worktree (`npm run worktree:create <feature-slug>`). Agents push feature branches to `origin`, open a Pull Request targeting `main`, and stop to wait for human review before any merge. Never commit or push directly to `main`.
 
 ## Walking Skeleton & Architecture
 - **Server Authority Invariant:** The Node.js + Express + Socket.io server (`packages/server`) owns 100% of game state transitions, combat calculations, round resolution, and RNG seeds.
@@ -41,19 +42,26 @@
 - DECIDED: Authentication architecture uses self-hosted native sessions (users, sessions tables with SHA-256 hashed tokens in HttpOnly cookies), avoiding 3rd-party SaaS (Clerk/Auth0). Players start with anonymous guest device tokens with optional direct Google/Discord OAuth linking. (2026-09-27)
 - DECIDED: Primary database storage engine is PostgreSQL on AWS Aurora Serverless v2 accessed via Drizzle ORM. Relational indexing is utilized for user/session relations and daily seed leaderboards; JSONB columns are used for flexible character inventories and combat run logs. (2026-09-27)
 - DECIDED: Cloud deployment architecture utilizes a unified single container hosted on Amazon ECS Express Mode / Fargate behind an Application Load Balancer (ALB). Express serves built client static assets (`packages/client/dist`) while hosting Socket.io WebSockets and REST endpoints on a single origin, replacing sunset App Runner with native VPC connectivity to Aurora Serverless v2. (2026-09-27)
+- DECIDED: Multi-agent Git isolation mandates Git worktrees (`..\daily-dungeon-worktrees\<feature-slug>`) for each concurrent agent. Working directly in the primary root tree is prohibited to prevent workspace clobbering. Feature branches must be pushed to origin, submitted via PR, and reviewed before merge. (2026-09-27)
 
 ## Forbidden
 - NEVER perform combat damage or state resolution calculations on the client.
 - NEVER add full-page scroll containers to the combat view on mobile.
 - NEVER conclude a task without executing `npm test` and `npm run build`.
+- NEVER work, edit, or commit directly in the primary root repository `daily-dungeon` when implementing features.
+- NEVER push commits directly to `main`.
+- NEVER self-merge Pull Requests without review and approval.
 
 ## Mandated
 - ALWAYS keep `packages/shared` completely pure and testable with Vitest.
 - ALWAYS test network binding on `0.0.0.0` (accessible over local Wi-Fi / LAN).
 - ALWAYS check server port `3001` and client port `5173` process hygiene when restarting servers.
+- ALWAYS create and operate within an isolated Git worktree via `npm run worktree:create <feature-slug>`.
+- ALWAYS push feature branches to `origin` and open a Pull Request targeting `main`.
+- ALWAYS wait for human / peer review and approval before merging.
 
 ## Environment & Integrations (Pre-Verified Facts)
-- **Git & GitHub:** Git is initialized with default branch `main`. Remote `origin` is `git@github.com:charltona/daily-dungeon.git`. SSH authentication is pre-verified for GitHub user `charltona`. Do not waste turns probing SSH or re-checking git installation.
+- **Git & GitHub:** Git is initialized with default branch `main`. Remote `origin` is `git@github.com:charltona/daily-dungeon.git`. SSH authentication is pre-verified for GitHub user `charltona`. Push to dedicated feature branches only; pushing directly to `main` is strictly forbidden.
 - **Trello Board & Workflow ARIs:**
   - Board: `Daily Dungeon` (`ari:cloud:trello::board/workspace/60c9a8ac9046af89b9dd8514/6ab88a785ef848c8b5667a5a`)
   - Backlog List ID: `ari:cloud:trello::list/workspace/60c9a8ac9046af89b9dd8514/6ab88a7d14244044c587a217`

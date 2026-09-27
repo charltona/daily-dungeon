@@ -101,8 +101,8 @@ import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 // Application Load Balanced Fargate Service
 const service = new ecsPatterns.ApplicationLoadBalancedFargateService(this, 'DailyDungeonService', {
   vpc,
-  memoryLimitMiB: 1024,
-  cpu: 512,
+  memoryLimitMiB: 512,
+  cpu: 256,
   desiredCount: 1,
   taskImageOptions: {
     image: ecs.ContainerImage.fromAsset('../'), // Builds root Dockerfile

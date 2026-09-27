@@ -28,8 +28,8 @@ export class InfraStack extends cdk.Stack {
       'DailyDungeonService',
       {
         cluster,
-        memoryLimitMiB: 1024,
-        cpu: 512,
+        memoryLimitMiB: 512,
+        cpu: 256,
         desiredCount: 1,
         taskImageOptions: {
           image: ecs.ContainerImage.fromAsset(monorepoRoot),

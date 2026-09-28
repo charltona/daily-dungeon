@@ -17,6 +17,8 @@
     "db:check": "npm run db:check --workspace=@daily-dungeon/server",
     "test:infra": "npm --prefix infra test",
     "cdk:synth": "npm --prefix infra run cdk -- synth",
+    "cdk:diff": "npm --prefix infra run cdk -- diff",
+    "cdk:deploy": "npm --prefix infra run cdk -- deploy",
     "verify:local": "node scripts/verify-local.mjs",
     "worktree:create": "node scripts/worktree.mjs create",
     "worktree:list": "node scripts/worktree.mjs list",

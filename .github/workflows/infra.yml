@@ -44,3 +44,39 @@ jobs:
           CDK_DEFAULT_ACCOUNT: '123456789012'
           CDK_DEFAULT_REGION: 'ap-southeast-2'
         run: npx cdk synth
+
+  deploy-infra:
+    name: Deploy Infrastructure Stack
+    runs-on: ubuntu-latest
+    needs: verify-infra
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    permissions:
+      id-token: write
+      contents: read
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: 'infra/package-lock.json'
+
+      - name: Install Infra Dependencies
+        run: npm ci
+
+      - name: Configure AWS Credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::825155104001:role/DailyDungeonGitHubDeployRole
+          aws-region: ap-southeast-2
+          audience: sts.amazonaws.com
+
+      - name: Deploy CDK Stack
+        run: npx cdk deploy --require-approval never
+

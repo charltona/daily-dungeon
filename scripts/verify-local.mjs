@@ -91,7 +91,14 @@ async function runAutonomousVerification() {
       ['run', 'db:migrate', '--workspace=@daily-dungeon/server']
     );
 
-    // 4. AWS CDK Synthesis Gate
+    // 4. AWS CDK Infrastructure Unit Tests & Synthesis Gate
+    await runStep(
+      'AWS CDK Infrastructure Unit Tests',
+      npmCmd,
+      ['test'],
+      path.join(rootDir, 'infra')
+    );
+
     await runStep(
       'AWS CDK Infrastructure Synthesis (ECS & Aurora Stack)',
       npxCmd,

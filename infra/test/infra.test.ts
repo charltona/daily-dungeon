@@ -40,5 +40,31 @@ test('InfraStack synthesizes VPC, ECS Cluster, and ALB Fargate Service', () => {
       },
     ],
   });
+
+  template.hasResourceProperties('AWS::IAM::Role', {
+    RoleName: 'DailyDungeonGitHubDeployRole',
+    AssumeRolePolicyDocument: {
+      Statement: [
+        {
+          Action: 'sts:AssumeRoleWithWebIdentity',
+          Effect: 'Allow',
+          Condition: {
+            StringEquals: {
+              'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com',
+            },
+            StringLike: {
+              'token.actions.githubusercontent.com:sub': 'repo:charltona/daily-dungeon:*',
+            },
+          },
+        },
+      ],
+    },
+  });
+
+  template.hasOutput('GitHubActionsDeployRoleArn', {
+    Export: {
+      Name: 'DailyDungeonGitHubDeployRoleArn',
+    },
+  });
 });
 

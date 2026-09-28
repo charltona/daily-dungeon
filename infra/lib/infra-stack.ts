@@ -4,9 +4,12 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as path from 'path';
 
 export class InfraStack extends cdk.Stack {
+  public readonly githubDeployRole: iam.Role;
+
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
@@ -62,6 +65,45 @@ export class InfraStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(5),
       healthyThresholdCount: 2,
       unhealthyThresholdCount: 3,
+    });
+
+    // 4. GitHub Actions OIDC Deployment Role
+    const githubDomain = 'token.actions.githubusercontent.com';
+    const githubProviderArn = `arn:aws:iam::${this.account}:oidc-provider/${githubDomain}`;
+    const githubProvider = iam.OpenIdConnectProvider.fromOpenIdConnectProviderArn(
+      this,
+      'GitHubOidcProvider',
+      githubProviderArn
+    );
+
+    this.githubDeployRole = new iam.Role(this, 'GitHubDeployRole', {
+      roleName: 'DailyDungeonGitHubDeployRole',
+      description: 'Deployment role assumed by GitHub Actions for Daily Dungeon CI/CD',
+      assumedBy: new iam.OpenIdConnectPrincipal(githubProvider, {
+        StringEquals: {
+          [`${githubDomain}:aud`]: 'sts.amazonaws.com',
+        },
+        StringLike: {
+          [`${githubDomain}:sub`]: 'repo:charltona/daily-dungeon:*',
+        },
+      }),
+    });
+
+    // Allow role to assume CDK bootstrap deployment and publishing roles
+    this.githubDeployRole.addToPolicy(
+      new iam.PolicyStatement({
+        sid: 'CdkBootstrapRoleAssumption',
+        effect: iam.Effect.ALLOW,
+        actions: ['sts:AssumeRole'],
+        resources: [`arn:aws:iam::${this.account}:role/cdk-*-${this.account}-*`],
+      })
+    );
+
+    // Output the Role ARN for seamless CI/CD reference
+    new cdk.CfnOutput(this, 'GitHubActionsDeployRoleArn', {
+      value: this.githubDeployRole.roleArn,
+      description: 'ARN of the IAM Role assumed by GitHub Actions via OIDC',
+      exportName: 'DailyDungeonGitHubDeployRoleArn',
     });
   }
 }

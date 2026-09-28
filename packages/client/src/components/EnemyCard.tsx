@@ -1,14 +1,23 @@
 import React from 'react';
 import { Skull, AlertTriangle, Shield } from 'lucide-react';
 import { EnemyUnit, CharacterSheet } from '@daily-dungeon/shared';
+import { FloatingCombatText, FloatingTextItem } from './FloatingCombatText';
 
 interface EnemyCardProps {
   enemy: EnemyUnit | null;
   players: Record<string, CharacterSheet>;
   isActive?: boolean;
+  floatingTexts?: FloatingTextItem[];
+  impactEffect?: 'damage' | 'heal';
 }
 
-export const EnemyCard: React.FC<EnemyCardProps> = ({ enemy, players, isActive }) => {
+export const EnemyCard: React.FC<EnemyCardProps> = ({
+  enemy,
+  players,
+  isActive,
+  floatingTexts = [],
+  impactEffect,
+}) => {
   if (!enemy) {
     return (
       <div className="bg-dungeon-card/60 border border-dungeon-border rounded-xl p-3 text-center text-slate-500 text-xs">
@@ -27,14 +36,21 @@ export const EnemyCard: React.FC<EnemyCardProps> = ({ enemy, players, isActive }
 
   return (
     <div
-      className={`bg-dungeon-card rounded-xl p-2.5 shadow-md relative overflow-hidden transition-all ${
-        isActive
+      className={`bg-dungeon-card rounded-xl p-2.5 shadow-md relative overflow-visible transition-all ${
+        impactEffect === 'damage'
+          ? 'animate-damage-shake border-2 border-red-500 ring-4 ring-red-500/70 bg-red-950/30'
+          : impactEffect === 'heal'
+          ? 'animate-heal-pulse border-2 border-emerald-500 ring-4 ring-emerald-500/70 bg-emerald-950/30'
+          : isActive
           ? 'border-2 border-red-500 ring-2 ring-red-500/50 scale-[1.01]'
           : 'border border-red-900/60'
       }`}
     >
+      {/* Floating Damage/Heal Numbers */}
+      <FloatingCombatText items={floatingTexts} />
+
       {/* Top red glow line */}
-      <div className="absolute top-0 right-0 left-0 h-0.5 bg-gradient-to-r from-red-600 via-amber-500 to-red-600" />
+      <div className="absolute top-0 right-0 left-0 h-0.5 bg-gradient-to-r from-red-600 via-amber-500 to-red-600 rounded-t-xl" />
 
       {/* Row 1: Name, Shield, HP numbers */}
       <div className="flex items-center justify-between mb-1.5">

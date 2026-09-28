@@ -1,6 +1,7 @@
 import React from 'react';
 import { Heart, Zap, Check, Clock, User } from 'lucide-react';
 import { CharacterSheet } from '@daily-dungeon/shared';
+import { FloatingCombatText, FloatingTextItem } from './FloatingCombatText';
 
 interface PartyCardProps {
   players: Record<string, CharacterSheet>;
@@ -11,6 +12,8 @@ interface PartyCardProps {
   onSelectAllyTarget?: (allyId: string) => void;
   selectedTargetId?: string | null;
   activeActorId?: string;
+  floatingTexts?: FloatingTextItem[];
+  impactEffects?: Record<string, 'damage' | 'heal'>;
 }
 
 export const PartyCard: React.FC<PartyCardProps> = ({
@@ -20,6 +23,8 @@ export const PartyCard: React.FC<PartyCardProps> = ({
   onSelectAllyTarget,
   selectedTargetId,
   activeActorId,
+  floatingTexts = [],
+  impactEffects = {},
 }) => {
   const currentPlayer = players[currentPlayerId];
   const teammates = Object.values(players).filter((p) => p.id !== currentPlayerId);
@@ -36,6 +41,9 @@ export const PartyCard: React.FC<PartyCardProps> = ({
   );
   const isCurrentLocked = lockedPlayerIds.includes(currentPlayerId);
 
+  const heroTexts = floatingTexts.filter((t) => t.targetId === currentPlayerId);
+  const heroImpact = impactEffects[currentPlayerId];
+
   return (
     <div className="space-y-2">
       {/* 1. Teammates Status Row (Super compact chips) */}
@@ -49,14 +57,20 @@ export const PartyCard: React.FC<PartyCardProps> = ({
             const isDead = teammate.currentHp <= 0;
             const isTargeted = selectedTargetId === teammate.id;
             const isActing = activeActorId === teammate.id;
+            const teammateTexts = floatingTexts.filter((t) => t.targetId === teammate.id);
+            const teammateImpact = impactEffects[teammate.id];
 
             return (
               <button
                 key={teammate.id}
                 type="button"
                 onClick={() => onSelectAllyTarget && onSelectAllyTarget(teammate.id)}
-                className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-xs font-mono transition-all flex-shrink-0 cursor-pointer ${
-                  isActing
+                className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-xs font-mono transition-all flex-shrink-0 cursor-pointer relative overflow-visible ${
+                  teammateImpact === 'damage'
+                    ? 'border-red-500 bg-red-950/80 ring-2 ring-red-500 animate-damage-shake text-white'
+                    : teammateImpact === 'heal'
+                    ? 'border-emerald-500 bg-emerald-950/80 ring-2 ring-emerald-500 animate-heal-pulse text-white'
+                    : isActing
                     ? 'border-amber-400 bg-amber-950 ring-2 ring-amber-400 text-white animate-pulse'
                     : isTargeted
                     ? 'border-blue-400 bg-blue-950/80 ring-1 ring-blue-400 text-white'
@@ -67,6 +81,7 @@ export const PartyCard: React.FC<PartyCardProps> = ({
                     : 'border-dungeon-border bg-dungeon-darker text-slate-300'
                 }`}
               >
+                <FloatingCombatText items={teammateTexts} position="top" />
                 <span className="font-bold text-[11px]">{teammate.name}</span>
                 <span className="text-[10px] text-red-300 font-semibold">
                   {teammate.currentHp}/{teammate.maxHp}
@@ -84,14 +99,20 @@ export const PartyCard: React.FC<PartyCardProps> = ({
 
       {/* 2. Your Hero Card (Prominent & Clear) */}
       <div
-        className={`rounded-xl border p-2.5 transition-all ${
-          activeActorId === currentPlayerId
+        className={`rounded-xl border p-2.5 transition-all relative overflow-visible ${
+          heroImpact === 'damage'
+            ? 'bg-red-950/30 border-2 border-red-500 ring-4 ring-red-500/70 animate-damage-shake'
+            : heroImpact === 'heal'
+            ? 'bg-emerald-950/30 border-2 border-emerald-500 ring-4 ring-emerald-500/70 animate-heal-pulse'
+            : activeActorId === currentPlayerId
             ? 'bg-dungeon-card/95 border-amber-400 ring-2 ring-amber-400/60 shadow-[0_0_15px_rgba(245,158,11,0.3)] animate-pulse'
             : isCurrentLocked
             ? 'bg-dungeon-card/95 border-emerald-500/80 shadow-[0_0_12px_rgba(16,185,129,0.2)]'
             : 'bg-dungeon-card border-amber-500/60 shadow-md'
         }`}
       >
+        {/* Floating Combat Numbers over Hero */}
+        <FloatingCombatText items={heroTexts} />
         {/* Top: Name & Lock Indicator */}
         <div className="flex items-center justify-between mb-1.5">
           <div className="flex items-center gap-1.5">

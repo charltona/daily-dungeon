@@ -41,8 +41,8 @@ jobs:
 
       - name: Synthesize AWS CDK CloudFormation Stack
         env:
-          CDK_DEFAULT_ACCOUNT: '123456789012'
-          CDK_DEFAULT_REGION: 'ap-southeast-2'
+          CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT || '123456789012' }}
+          CDK_DEFAULT_REGION: ${{ secrets.AWS_REGION || 'ap-southeast-2' }}
         run: npx cdk synth
 
   deploy-infra:
@@ -73,10 +73,13 @@ jobs:
       - name: Configure AWS Credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::825155104001:role/DailyDungeonGitHubDeployRole
-          aws-region: ap-southeast-2
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT }}:role/DailyDungeonGitHubDeployRole
+          aws-region: ${{ secrets.AWS_REGION }}
           audience: sts.amazonaws.com
 
       - name: Deploy CDK Stack
+        env:
+          CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT }}
+          CDK_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
         run: npx cdk deploy --require-approval never
 

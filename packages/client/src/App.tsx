@@ -15,6 +15,7 @@ import { ActionBar } from './components/ActionBar.js';
 import { CombatFeed } from './components/CombatFeed.js';
 import { LobbyScreen } from './components/LobbyScreen.js';
 import { EndGameScreen } from './components/EndGameScreen.js';
+import { useCombatVisuals } from './hooks/useCombatVisuals.js';
 
 export function App() {
   const flagsmith = useFlagsmith();
@@ -27,6 +28,14 @@ export function App() {
   const [activeActorId, setActiveActorId] = useState<string | undefined>(undefined);
   const [activePlaybackLog, setActivePlaybackLog] = useState<string[]>([]);
   const [isEndModalOpen, setIsEndModalOpen] = useState(false);
+
+  const {
+    floatingTexts,
+    impactEffects,
+    triggerEventVisual,
+    getTextsForTarget,
+    clearAllVisuals,
+  } = useCombatVisuals();
 
   // Identify player in Flagsmith
   useEffect(() => {
@@ -72,6 +81,46 @@ export function App() {
       const event = events[i];
       setActiveActorId(event.actorId);
       setActivePlaybackLog((prev) => [...prev, event.message]);
+
+      // Spawn floating numbers and unit impact visual effects
+      setRoomState((current) => {
+        if (!current) return current;
+        triggerEventVisual(event, current.players);
+
+        // Apply incremental visual HP / Shield adjustments during playback
+        const nextState = JSON.parse(JSON.stringify(current)) as RoomState;
+        if (typeof event.damageDealt === 'number' && event.damageDealt > 0) {
+          if (nextState.enemy && event.targetId === nextState.enemy.id) {
+            nextState.enemy.currentHp = Math.max(0, nextState.enemy.currentHp - event.damageDealt);
+          } else if (event.targetId === 'ALL_PLAYERS') {
+            Object.values(nextState.players).forEach((p) => {
+              p.currentHp = Math.max(0, p.currentHp - (event.damageDealt || 0));
+            });
+          } else if (nextState.players[event.targetId]) {
+            const p = nextState.players[event.targetId];
+            p.currentHp = Math.max(0, p.currentHp - event.damageDealt);
+          }
+        }
+        if (
+          typeof event.healingDone === 'number' &&
+          event.healingDone > 0 &&
+          nextState.players[event.targetId]
+        ) {
+          const p = nextState.players[event.targetId];
+          p.currentHp = Math.min(p.maxHp, p.currentHp + event.healingDone);
+        }
+        if (typeof event.shieldGained === 'number' && event.shieldGained > 0) {
+          if (nextState.enemy && event.targetId === nextState.enemy.id) {
+            nextState.enemy.shield = (nextState.enemy.shield || 0) + event.shieldGained;
+          } else if (nextState.players[event.targetId]) {
+            const p = nextState.players[event.targetId];
+            p.shield = (p.shield || 0) + event.shieldGained;
+          }
+        }
+
+        return nextState;
+      });
+
       await new Promise((res) => setTimeout(res, 600));
     }
     setActiveActorId(undefined);
@@ -154,6 +203,8 @@ export function App() {
           enemy={roomState.enemy}
           players={roomState.players}
           isActive={activeActorId === roomState.enemy?.id}
+          floatingTexts={roomState.enemy ? getTextsForTarget(roomState.enemy.id) : []}
+          impactEffect={roomState.enemy ? impactEffects[roomState.enemy.id] : undefined}
         />
 
         {/* 3. Teammate Status & Your Hero Health / Resource */}
@@ -164,6 +215,8 @@ export function App() {
           queuedActions={roomState.queuedActions}
           enemyName={roomState.enemy?.name}
           activeActorId={activeActorId}
+          floatingTexts={floatingTexts}
+          impactEffects={impactEffects}
         />
 
         {/* 4. Action Section & Combat Log Ticker */}

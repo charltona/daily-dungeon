@@ -35,8 +35,8 @@ npm test
 ## How to Play
 
 1. Open `http://localhost:5173` in your browser.
-2. Enter your Adventurer Name (e.g. `Brog`, `Val`, `Elia`), select your class (**Warrior**, **Rogue**, or **Priest**), and enter a room code (or keep `CRYPT-42`).
-3. Open a second browser tab (or incognito window) with the same room code to test multi-player co-op!
+2. Select your class (**Warrior**, **Rogue**, or **Priest**), and use the automatically randomised room code (or enter your own / re-roll with the dice button).
+3. Open a second browser tab (or incognito window) with the same room code or invite link to test multi-player co-op!
 4. The host clicks **"Descend into Crypt (Start Encounter)"**.
 5. Each round, you have **15 seconds** to:
    - Read the enemy's **telegraphed intent** (who they are targeting and what attack they are winding up).

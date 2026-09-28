@@ -18,6 +18,10 @@ jobs:
     name: Verify & Synthesize Infrastructure
     runs-on: ubuntu-latest
 
+    permissions:
+      id-token: write
+      contents: read
+
     defaults:
       run:
         working-directory: infra
@@ -35,6 +39,15 @@ jobs:
 
       - name: Install Infra Dependencies
         run: npm ci
+
+      - name: Configure AWS Credentials via OIDC
+        if: ${{ secrets.AWS_ACCOUNT != '' && secrets.AWS_REGION != '' }}
+        continue-on-error: true
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT }}:role/DailyDungeonGitHubDeployRole
+          aws-region: ${{ secrets.AWS_REGION }}
+          audience: sts.amazonaws.com
 
       - name: Run Infra Unit Tests
         run: npm test

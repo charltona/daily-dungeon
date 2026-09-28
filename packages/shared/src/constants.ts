@@ -147,3 +147,17 @@ export interface FeatureFlagState {
 }
 
 export type FeatureFlagDictionary = Record<string, FeatureFlagState>;
+
+export const ROOM_CODE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+
+/**
+ * Generates an uppercase alphanumeric room code (A-Z, 0-9).
+ * Defaults to 6 characters.
+ */
+export function generateRoomCode(length: number = 6): string {
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += ROOM_CODE_ALPHABET.charAt(Math.floor(Math.random() * ROOM_CODE_ALPHABET.length));
+  }
+  return result;
+}

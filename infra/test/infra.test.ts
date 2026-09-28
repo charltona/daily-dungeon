@@ -53,7 +53,10 @@ test('InfraStack synthesizes VPC, ECS Cluster, and ALB Fargate Service', () => {
               'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com',
             },
             StringLike: {
-              'token.actions.githubusercontent.com:sub': 'repo:charltona/daily-dungeon:*',
+              'token.actions.githubusercontent.com:sub': [
+                'repo:charltona/daily-dungeon:*',
+                'repo:charltona@2724511/daily-dungeon@1390073548:*',
+              ],
             },
           },
         },

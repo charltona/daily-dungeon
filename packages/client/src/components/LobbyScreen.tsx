@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Shield, Sparkles, Sword, Users, Play, Copy, Check, ShieldCheck } from 'lucide-react';
-import { ClassType, CharacterSheet, CLASS_ABILITIES, CLASS_BASE_STATS, RoomState } from '@daily-dungeon/shared';
+import { Shield, Sparkles, Sword, Users, Play, Copy, Check, ShieldCheck, Dices } from 'lucide-react';
+import { ClassType, CharacterSheet, CLASS_ABILITIES, CLASS_BASE_STATS, RoomState, generateRoomCode } from '@daily-dungeon/shared';
 
 interface LobbyScreenProps {
   roomState: RoomState | null;
@@ -20,9 +20,9 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const roomParam = params.get('room');
-      if (roomParam) return roomParam.toUpperCase().trim();
+      if (roomParam && roomParam.trim()) return roomParam.toUpperCase().trim();
     }
-    return roomState?.roomId || 'CRYPT-42';
+    return roomState?.roomId || generateRoomCode();
   });
   const [copied, setCopied] = useState(false);
 
@@ -39,7 +39,7 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
   }, [roomState?.roomId]);
 
   const handleCopyLink = async () => {
-    const code = (roomState?.roomId || roomId || 'CRYPT-42').trim().toUpperCase();
+    const code = (roomState?.roomId || roomId || generateRoomCode()).trim().toUpperCase();
     const url = new URL(window.location.origin + window.location.pathname);
     url.searchParams.set('room', code);
     const inviteUrl = url.toString();
@@ -221,17 +221,32 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
       <form onSubmit={handleJoin} className="space-y-5">
         {/* Room Input */}
         <div>
-          <label className="block text-xs font-bold uppercase text-slate-400 mb-1.5">
-            Dungeon Room Code
-          </label>
-          <input
-            type="text"
-            value={roomId}
-            onChange={(e) => setRoomId(e.target.value.toUpperCase())}
-            placeholder="CRYPT-42"
-            className="w-full bg-dungeon-darker border border-dungeon-border rounded-xl px-3.5 py-2.5 font-mono text-amber-400 font-bold focus:outline-none focus:border-amber-500 uppercase text-base"
-            required
-          />
+          <div className="flex items-center justify-between mb-1.5">
+            <label htmlFor="room-input" className="block text-xs font-bold uppercase text-slate-400">
+              Dungeon Room Code
+            </label>
+            <span className="text-[11px] text-slate-500 font-mono">Randomised each load</span>
+          </div>
+          <div className="flex gap-2">
+            <input
+              id="room-input"
+              type="text"
+              value={roomId}
+              onChange={(e) => setRoomId(e.target.value.toUpperCase())}
+              placeholder="e.g. 7K2PM9"
+              className="flex-1 bg-dungeon-darker border border-dungeon-border rounded-xl px-3.5 py-2.5 font-mono text-amber-400 font-bold focus:outline-none focus:border-amber-500 uppercase text-base"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setRoomId(generateRoomCode())}
+              title="Generate new random room code"
+              aria-label="Generate new random room code"
+              className="px-3.5 py-2.5 bg-dungeon-darker hover:bg-slate-800 text-slate-400 hover:text-amber-400 border border-dungeon-border hover:border-amber-500/50 rounded-xl transition-all flex items-center justify-center cursor-pointer shadow-sm active:scale-95"
+            >
+              <Dices className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Class Selection */}

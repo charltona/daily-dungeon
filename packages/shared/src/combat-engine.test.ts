@@ -62,3 +62,35 @@ test('Feature Flags - Generic Types Definition', async () => {
   const shared = await import('./index.js');
   assert.ok(shared);
 });
+
+test('Room Code Generator - Alphanumeric A-Z 0-9 Formatting', async () => {
+  const { generateRoomCode, ROOM_CODE_ALPHABET } = await import('./index.js');
+
+  // Verify alphabet contains only A-Z and 0-9
+  assert.match(ROOM_CODE_ALPHABET, /^[A-Z0-9]+$/);
+  assert.equal(ROOM_CODE_ALPHABET.length, 36);
+
+  // Test default length (6)
+  const defaultCode = generateRoomCode();
+  assert.equal(defaultCode.length, 6);
+  assert.match(defaultCode, /^[A-Z0-9]{6}$/);
+
+  // Test custom length (e.g. 4, 8)
+  const code4 = generateRoomCode(4);
+  assert.equal(code4.length, 4);
+  assert.match(code4, /^[A-Z0-9]{4}$/);
+
+  const code8 = generateRoomCode(8);
+  assert.equal(code8.length, 8);
+  assert.match(code8, /^[A-Z0-9]{8}$/);
+
+  // Test randomness across iterations
+  const codes = new Set<string>();
+  for (let i = 0; i < 50; i++) {
+    const code = generateRoomCode();
+    codes.add(code);
+  }
+  // With 36^6 possible codes, 50 random codes should all be distinct
+  assert.equal(codes.size, 50);
+});
+

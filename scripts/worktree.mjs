@@ -116,6 +116,17 @@ switch (command) {
       }
     }
 
+    const infraNmSource = path.join(rootDir, 'infra', 'node_modules');
+    const infraNmTarget = path.join(targetDir, 'infra', 'node_modules');
+    if (fs.existsSync(infraNmSource) && !fs.existsSync(infraNmTarget)) {
+      try {
+        fs.symlinkSync(infraNmSource, infraNmTarget, 'junction');
+        console.log(`⚡ Linked infra node_modules via NTFS junction.`);
+      } catch (err) {
+        console.warn(`⚠️  Could not create infra node_modules junction (${err.message}).`);
+      }
+    }
+
     console.log(`\n=======================================================`);
     console.log(`✅ AGENT WORKTREE READY:`);
     console.log(`   Directory: ${targetDir}`);

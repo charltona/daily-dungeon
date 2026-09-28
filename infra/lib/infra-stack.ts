@@ -84,7 +84,10 @@ export class InfraStack extends cdk.Stack {
           [`${githubDomain}:aud`]: 'sts.amazonaws.com',
         },
         StringLike: {
-          [`${githubDomain}:sub`]: 'repo:charltona/daily-dungeon:*',
+          [`${githubDomain}:sub`]: [
+            'repo:charltona/daily-dungeon:*',
+            'repo:charltona@2724511/daily-dungeon@1390073548:*',
+          ],
         },
       }),
     });

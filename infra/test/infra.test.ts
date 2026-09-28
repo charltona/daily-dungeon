@@ -1,17 +1,44 @@
-// import * as cdk from 'aws-cdk-lib/core';
-// import { Template } from 'aws-cdk-lib/assertions';
-// import * as Infra from '../lib/infra-stack';
+import * as cdk from 'aws-cdk-lib/core';
+import { Template } from 'aws-cdk-lib/assertions';
+import { InfraStack } from '../lib/infra-stack';
 
-// example test. To run these tests, uncomment this file along with the
-// example resource in lib/infra-stack.ts
-test('SQS Queue Created', () => {
-//   const app = new cdk.App();
-//     // WHEN
-//   const stack = new Infra.InfraStack(app, 'MyTestStack');
-//     // THEN
-//   const template = Template.fromStack(stack);
+test('InfraStack synthesizes VPC, ECS Cluster, and ALB Fargate Service', () => {
+  const app = new cdk.App();
+  const stack = new InfraStack(app, 'TestDailyDungeonInfraStack');
+  const template = Template.fromStack(stack);
 
-//   template.hasResourceProperties('AWS::SQS::Queue', {
-//     VisibilityTimeout: 300
-//   });
+  template.hasResourceProperties('AWS::EC2::VPC', {
+    EnableDnsHostnames: true,
+    EnableDnsSupport: true,
+  });
+
+  template.hasResourceProperties('AWS::ECS::Cluster', {
+    ClusterName: 'daily-dungeon-cluster',
+  });
+
+  template.hasResourceProperties('AWS::ElasticLoadBalancingV2::TargetGroup', {
+    Port: 80,
+    Protocol: 'HTTP',
+    HealthCheckPath: '/api/health',
+  });
+
+  template.hasResourceProperties('AWS::ECS::TaskDefinition', {
+    ContainerDefinitions: [
+      {
+        Name: 'web',
+        PortMappings: [
+          {
+            ContainerPort: 3001,
+            Protocol: 'tcp',
+          },
+        ],
+        Secrets: [
+          {
+            Name: 'FLAGSMITH_SERVER_KEY',
+          },
+        ],
+      },
+    ],
+  });
 });
+

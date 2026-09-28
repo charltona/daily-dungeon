@@ -17,6 +17,11 @@ import { fileURLToPath } from 'url';
 import { db, dailySeeds } from './db/index.js';
 import { checkDatabaseHealth } from './db/check.js';
 import { eq } from 'drizzle-orm';
+import {
+  checkFlagsmithHealth,
+  getAllFeatureFlags,
+  isFeatureEnabled,
+} from './flagsmith.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -48,11 +53,34 @@ app.get('/api/health', async (req: Request, res: Response) => {
   } catch {
     dbStatus = 'unavailable';
   }
+
+  let flagsmithStatus = 'disconnected';
+  try {
+    const isFlagsmithHealthy = await checkFlagsmithHealth();
+    flagsmithStatus = isFlagsmithHealthy ? 'connected' : 'offline';
+  } catch {
+    flagsmithStatus = 'unavailable';
+  }
+
   res.json({
     status: 'ok',
     uptime: process.uptime(),
     database: dbStatus,
+    flagsmith: flagsmithStatus,
   });
+});
+
+app.get('/api/features', async (req: Request, res: Response) => {
+  const flags = await getAllFeatureFlags();
+  res.json({ flags });
+});
+
+app.get('/api/features/:identity', async (req: Request, res: Response) => {
+  const identity = Array.isArray(req.params.identity)
+    ? req.params.identity[0]
+    : req.params.identity;
+  const flags = await getAllFeatureFlags(identity);
+  res.json({ identity, flags });
 });
 
 app.get('/api/daily', async (req: Request, res: Response) => {

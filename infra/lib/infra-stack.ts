@@ -3,6 +3,7 @@ import { Construct } from 'constructs';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
+import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as path from 'path';
 
 export class InfraStack extends cdk.Stack {
@@ -21,6 +22,13 @@ export class InfraStack extends cdk.Stack {
       clusterName: 'daily-dungeon-cluster',
     });
 
+    // Flagsmith Server SDK Key referenced securely from AWS Systems Manager Parameter Store (never in code)
+    const flagsmithServerKeyParam = ssm.StringParameter.fromStringParameterName(
+      this,
+      'FlagsmithServerKeyParam',
+      '/daily-dungeon/flagsmith/server-key'
+    );
+
     // 3. Application Load Balanced Fargate Service
     const monorepoRoot = path.resolve(__dirname, '../../');
     const service = new ecsPatterns.ApplicationLoadBalancedFargateService(
@@ -38,6 +46,9 @@ export class InfraStack extends cdk.Stack {
           environment: {
             NODE_ENV: 'production',
             PORT: '3001',
+          },
+          secrets: {
+            FLAGSMITH_SERVER_KEY: ecs.Secret.fromSsmParameter(flagsmithServerKeyParam),
           },
         },
         publicLoadBalancer: true,

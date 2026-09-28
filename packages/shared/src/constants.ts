@@ -138,3 +138,12 @@ export const BASE_ENEMIES = {
     baseSpeed: 8,
   },
 };
+
+export type FeatureFlagValue = string | number | boolean | null;
+
+export interface FeatureFlagState {
+  enabled: boolean;
+  value?: FeatureFlagValue;
+}
+
+export type FeatureFlagDictionary = Record<string, FeatureFlagState>;

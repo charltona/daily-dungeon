@@ -6,6 +6,7 @@ import {
   ResolutionBatch,
   RoomState,
 } from '@daily-dungeon/shared';
+import { useFlagsmith } from '@flagsmith/flagsmith/react';
 import { Trophy, Skull, Sparkles } from 'lucide-react';
 import { Header } from './components/Header.js';
 import { EnemyCard } from './components/EnemyCard.js';
@@ -16,6 +17,8 @@ import { LobbyScreen } from './components/LobbyScreen.js';
 import { EndGameScreen } from './components/EndGameScreen.js';
 
 export function App() {
+  const flagsmith = useFlagsmith();
+
   const [socket, setSocket] = useState<Socket | null>(null);
   const [roomState, setRoomState] = useState<RoomState | null>(null);
   const [currentPlayerId] = useState<string>(() => {
@@ -24,6 +27,15 @@ export function App() {
   const [activeActorId, setActiveActorId] = useState<string | undefined>(undefined);
   const [activePlaybackLog, setActivePlaybackLog] = useState<string[]>([]);
   const [isEndModalOpen, setIsEndModalOpen] = useState(false);
+
+  // Identify player in Flagsmith
+  useEffect(() => {
+    if (flagsmith && currentPlayerId) {
+      flagsmith.identify(currentPlayerId).catch((err) => {
+        console.warn('[Flagsmith] Failed to identify user:', err);
+      });
+    }
+  }, [currentPlayerId, flagsmith]);
 
   // Socket initialization
   useEffect(() => {

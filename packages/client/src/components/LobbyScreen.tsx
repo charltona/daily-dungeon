@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Shield, Sparkles, Sword, Users, Play, Copy, Check, ShieldCheck } from 'lucide-react';
 import { ClassType, CharacterSheet, CLASS_ABILITIES, CLASS_BASE_STATS, RoomState } from '@daily-dungeon/shared';
 
@@ -16,12 +16,61 @@ export const LobbyScreen: React.FC<LobbyScreenProps> = ({
   currentPlayerId,
 }) => {
   const [selectedClass, setSelectedClass] = useState<ClassType>('warrior');
-  const [roomId, setRoomId] = useState('CRYPT-42');
+  const [roomId, setRoomId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const roomParam = params.get('room');
+      if (roomParam) return roomParam.toUpperCase().trim();
+    }
+    return roomState?.roomId || 'CRYPT-42';
+  });
   const [copied, setCopied] = useState(false);
 
-  const handleCopyLink = () => {
-    const url = `${window.location.origin}?room=${roomId}`;
-    navigator.clipboard.writeText(url);
+  // Keep roomId in sync when roomState is updated and synchronize browser URL bar
+  useEffect(() => {
+    if (roomState?.roomId) {
+      setRoomId(roomState.roomId);
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.origin + window.location.pathname);
+        url.searchParams.set('room', roomState.roomId);
+        window.history.replaceState({}, '', url.toString());
+      }
+    }
+  }, [roomState?.roomId]);
+
+  const handleCopyLink = async () => {
+    const code = (roomState?.roomId || roomId || 'CRYPT-42').trim().toUpperCase();
+    const url = new URL(window.location.origin + window.location.pathname);
+    url.searchParams.set('room', code);
+    const inviteUrl = url.toString();
+
+    let succeeded = false;
+    if (navigator.clipboard && window.isSecureContext) {
+      try {
+        await navigator.clipboard.writeText(inviteUrl);
+        succeeded = true;
+      } catch (err) {
+        console.warn('navigator.clipboard.writeText failed, using fallback', err);
+      }
+    }
+
+    if (!succeeded && typeof document !== 'undefined') {
+      try {
+        const textArea = document.createElement('textarea');
+        textArea.value = inviteUrl;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        succeeded = document.execCommand('copy');
+        textArea.remove();
+      } catch (err) {
+        console.error('Fallback clipboard copy failed', err);
+      }
+    }
+
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

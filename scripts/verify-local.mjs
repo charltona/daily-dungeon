@@ -71,6 +71,13 @@ async function runAutonomousVerification() {
       ['run', 'build']
     );
 
+    // 2b. Server Unit Tests (Flagsmith & services)
+    await runStep(
+      'Server Unit Tests (@daily-dungeon/server)',
+      npmCmd,
+      ['test', '--workspace=@daily-dungeon/server']
+    );
+
     // 3. Database Check & Migrations
     await runStep(
       'PostgreSQL Database Connectivity',

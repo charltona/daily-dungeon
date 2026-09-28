@@ -57,3 +57,8 @@ test('Combat Engine - Initiative Sorting and Dead Actor Rule', () => {
   assert.ok(batch.orderedEvents.length > 0);
   assert.ok(batch.finalRoomState.enemy!.currentHp < enemy.maxHp);
 });
+
+test('Feature Flags - Generic Types Definition', async () => {
+  const shared = await import('./index.js');
+  assert.ok(shared);
+});

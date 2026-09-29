@@ -37,11 +37,26 @@ export default {
           '0%, 100%': { boxShadow: '0 0 0 0 rgba(16, 185, 129, 0)' },
           '50%': { boxShadow: '0 0 16px 2px rgba(16, 185, 129, 0.6)' },
         },
+        'enemy-death': {
+          '0%': {
+            opacity: '1',
+            transform: 'translateY(0) rotate(0deg) scale(1)',
+          },
+          '20%': {
+            opacity: '0.9',
+            transform: 'translateY(-6px) rotate(-1.5deg) scale(1.02)',
+          },
+          '100%': {
+            opacity: '0',
+            transform: 'translateY(60px) rotate(6deg) scale(0.92)',
+          },
+        },
       },
       animation: {
         'float-combat': 'float-combat 1.44s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
         'damage-shake': 'damage-shake 0.42s ease-in-out',
         'heal-pulse': 'heal-pulse 0.6s ease-out',
+        'enemy-death': 'enemy-death 0.65s cubic-bezier(0.55, 0.055, 0.675, 0.19) forwards',
       },
     },
   },

@@ -213,6 +213,7 @@ export function App() {
       <main className="max-w-md mx-auto w-full px-2.5 py-1.5 flex-1 flex flex-col justify-between gap-1.5 overflow-hidden">
         {/* 2. Boss / Enemy Health & Telegraphed Intent */}
         <EnemyCard
+          key={roomState.enemy?.id || 'no-enemy'}
           enemy={roomState.enemy}
           players={roomState.players}
           isActive={activeActorId === roomState.enemy?.id}

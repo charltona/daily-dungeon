@@ -42,8 +42,8 @@ export class InfraStack extends cdk.Stack {
       imageTagMutability: ecr.TagMutability.MUTABLE,
       lifecycleRules: [
         {
-          description: 'Keep last 30 images to control storage costs',
-          maxImageCount: 30,
+          description: 'Keep last 5 images to control storage costs',
+          maxImageCount: 5,
         },
       ],
     });
@@ -166,6 +166,11 @@ export class InfraStack extends cdk.Stack {
           service.taskDefinition.taskRole.roleArn,
           service.taskDefinition.executionRole!.roleArn,
         ],
+        conditions: {
+          StringEquals: {
+            'iam:PassedToService': 'ecs-tasks.amazonaws.com',
+          },
+        },
       })
     );
 

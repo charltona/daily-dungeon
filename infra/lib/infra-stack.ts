@@ -6,7 +6,6 @@ import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
 import * as ssm from 'aws-cdk-lib/aws-ssm';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import * as path from 'path';
 
 export class InfraStack extends cdk.Stack {
   public readonly githubDeployRole: iam.Role;
@@ -49,11 +48,8 @@ export class InfraStack extends cdk.Stack {
     });
 
     // 3. Application Load Balanced Fargate Service
-    const monorepoRoot = path.resolve(__dirname, '../../');
-    const imageTag = process.env.IMAGE_TAG;
-    const containerImage = imageTag
-      ? ecs.ContainerImage.fromEcrRepository(this.repository, imageTag)
-      : ecs.ContainerImage.fromAsset(monorepoRoot);
+    const imageTag = process.env.IMAGE_TAG || 'latest';
+    const containerImage = ecs.ContainerImage.fromEcrRepository(this.repository, imageTag);
 
     const service = new ecsPatterns.ApplicationLoadBalancedFargateService(
       this,
@@ -138,6 +134,16 @@ export class InfraStack extends cdk.Stack {
 
     // Grant role pull/push access to the dedicated application ECR repository
     this.repository.grantPullPush(this.githubDeployRole);
+
+    // Allow role to describe ECR repositories
+    this.githubDeployRole.addToPolicy(
+      new iam.PolicyStatement({
+        sid: 'EcrDescribeRepositories',
+        effect: iam.Effect.ALLOW,
+        actions: ['ecr:DescribeRepositories'],
+        resources: [this.repository.repositoryArn],
+      })
+    );
 
     // Allow role to describe services/tasks, register new task definitions, and update ECS service
     this.githubDeployRole.addToPolicy(

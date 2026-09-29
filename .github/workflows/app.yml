@@ -95,20 +95,6 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION || 'ap-southeast-2' }}
           audience: sts.amazonaws.com
 
-      - name: Wait for ECR Authorization and Repository Readiness
-        env:
-          ECR_REPOSITORY: daily-dungeon-app
-        run: |
-          echo "Verifying ECR authorization and repository readiness..."
-          for i in {1..30}; do
-            if aws ecr get-authorization-token > /dev/null 2>&1 && aws ecr describe-repositories --repository-names "$ECR_REPOSITORY" > /dev/null 2>&1; then
-              echo "✔ ECR credentials and $ECR_REPOSITORY repository verified."
-              break
-            fi
-            echo "Waiting for IAM permissions / ECR repository readiness (attempt $i/30)..."
-            sleep 10
-          done
-
       - name: Log in to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2

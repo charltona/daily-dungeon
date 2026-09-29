@@ -151,6 +151,7 @@ export class InfraStack extends cdk.Stack {
         sid: 'EcsDeployment',
         effect: iam.Effect.ALLOW,
         actions: [
+          'ecs:ListServices',
           'ecs:DescribeServices',
           'ecs:DescribeTaskDefinition',
           'ecs:RegisterTaskDefinition',

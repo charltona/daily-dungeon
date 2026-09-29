@@ -162,6 +162,20 @@ switch (command) {
       console.warn(`⚠️  git worktree remove notice: ${err.message}`);
     }
 
+    // Safely unlink NTFS junctions first to prevent recursive deletion of root node_modules
+    const nmJunction = path.join(targetDir, 'node_modules');
+    if (fs.existsSync(nmJunction)) {
+      try {
+        fs.unlinkSync(nmJunction);
+      } catch {}
+    }
+    const infraNmJunction = path.join(targetDir, 'infra', 'node_modules');
+    if (fs.existsSync(infraNmJunction)) {
+      try {
+        fs.unlinkSync(infraNmJunction);
+      } catch {}
+    }
+
     if (fs.existsSync(targetDir)) {
       fs.rmSync(targetDir, { recursive: true, force: true });
       console.log(`✔ Directory cleaned up.`);

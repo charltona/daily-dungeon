@@ -9,12 +9,14 @@ export function useCombatVisuals() {
   const [impactEffects, setImpactEffects] = useState<Record<string, ImpactType>>({});
 
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const processedEventKeysRef = useRef<Set<string>>(new Set());
 
   // Clear timers on unmount
   useEffect(() => {
     return () => {
       timersRef.current.forEach((t) => clearTimeout(t));
       timersRef.current = [];
+      processedEventKeysRef.current.clear();
     };
   }, []);
 
@@ -32,10 +34,10 @@ export function useCombatVisuals() {
 
     setFloatingTexts((prev) => [...prev, newItem]);
 
-    // Auto-remove after animation completes (1200ms)
+    // Auto-remove after animation completes (1440ms, 20% longer than 1200ms)
     const removeTimer = setTimeout(() => {
       setFloatingTexts((prev) => prev.filter((item) => item.id !== id));
-    }, 1200);
+    }, 1440);
 
     timersRef.current.push(removeTimer);
   }, []);
@@ -43,30 +45,44 @@ export function useCombatVisuals() {
   const triggerImpact = useCallback((targetId: string, type: ImpactType) => {
     setImpactEffects((prev) => ({ ...prev, [targetId]: type }));
 
-    // Reset impact effect after 350ms
+    // Reset impact effect after 420ms (20% longer than 350ms)
     const timer = setTimeout(() => {
       setImpactEffects((prev) => {
         const next = { ...prev };
         delete next[targetId];
         return next;
       });
-    }, 350);
+    }, 420);
 
     timersRef.current.push(timer);
   }, []);
 
   const triggerEventVisual = useCallback(
-    (event: ResolutionEvent, players: Record<string, CharacterSheet>) => {
+    (
+      event: ResolutionEvent,
+      players?: Record<string, CharacterSheet>,
+      eventKey?: string
+    ) => {
+      // Deduplicate event triggers if an eventKey is provided
+      if (eventKey) {
+        if (processedEventKeysRef.current.has(eventKey)) {
+          return;
+        }
+        processedEventKeysRef.current.add(eventKey);
+      }
+
       // 1. Damage Dealt
       if (typeof event.damageDealt === 'number' && event.damageDealt > 0) {
         if (event.targetId === 'ALL_PLAYERS') {
           // Party-wide AoE
-          Object.values(players).forEach((p) => {
-            if (p.currentHp > 0) {
-              addFloatingText(p.id, `-${event.damageDealt}`, 'damage');
-              triggerImpact(p.id, 'damage');
-            }
-          });
+          if (players) {
+            Object.values(players).forEach((p) => {
+              if (p.currentHp > 0) {
+                addFloatingText(p.id, `-${event.damageDealt}`, 'damage');
+                triggerImpact(p.id, 'damage');
+              }
+            });
+          }
         } else {
           addFloatingText(event.targetId, `-${event.damageDealt}`, 'damage');
           triggerImpact(event.targetId, 'damage');
@@ -102,6 +118,7 @@ export function useCombatVisuals() {
   const clearAllVisuals = useCallback(() => {
     setFloatingTexts([]);
     setImpactEffects({});
+    processedEventKeysRef.current.clear();
     timersRef.current.forEach((t) => clearTimeout(t));
     timersRef.current = [];
   }, []);

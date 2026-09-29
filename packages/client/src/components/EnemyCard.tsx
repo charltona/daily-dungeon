@@ -26,6 +26,7 @@ export const EnemyCard: React.FC<EnemyCardProps> = ({
     );
   }
 
+  const isDead = enemy.currentHp <= 0;
   const hpPercent = Math.max(0, Math.min(100, Math.round((enemy.currentHp / enemy.maxHp) * 100)));
   const telegraphed = enemy.telegraphedAction;
 
@@ -35,73 +36,83 @@ export const EnemyCard: React.FC<EnemyCardProps> = ({
   }
 
   return (
-    <div
-      className={`bg-dungeon-card rounded-xl p-2.5 shadow-md relative overflow-visible transition-all ${
-        impactEffect === 'damage'
-          ? 'animate-damage-shake border-2 border-red-500 ring-4 ring-red-500/70 bg-red-950/30'
-          : impactEffect === 'heal'
-          ? 'animate-heal-pulse border-2 border-emerald-500 ring-4 ring-emerald-500/70 bg-emerald-950/30'
-          : isActive
-          ? 'border-2 border-red-500 ring-2 ring-red-500/50 scale-[1.01]'
-          : 'border border-red-900/60'
-      }`}
-    >
-      {/* Floating Damage/Heal Numbers */}
+    <div className="relative">
+      {/* Floating Damage/Heal Numbers float in fixed coordinate space */}
       <FloatingCombatText items={floatingTexts} />
 
-      {/* Top red glow line */}
-      <div className="absolute top-0 right-0 left-0 h-0.5 bg-gradient-to-r from-red-600 via-amber-500 to-red-600 rounded-t-xl" />
+      {/* The Enemy Nameplate Card - drops, falls and fades on death */}
+      <div
+        className={`bg-dungeon-card rounded-xl p-2.5 shadow-md relative overflow-visible transition-all ${
+          isDead
+            ? 'animate-enemy-death border-2 border-red-900/50 pointer-events-none'
+            : impactEffect === 'damage'
+            ? 'animate-damage-shake border-2 border-red-500 ring-4 ring-red-500/70 bg-red-950/30'
+            : impactEffect === 'heal'
+            ? 'animate-heal-pulse border-2 border-emerald-500 ring-4 ring-emerald-500/70 bg-emerald-950/30'
+            : isActive
+            ? 'border-2 border-red-500 ring-2 ring-red-500/50 scale-[1.01]'
+            : 'border border-red-900/60'
+        }`}
+      >
+        {/* Top red glow line */}
+        <div className="absolute top-0 right-0 left-0 h-0.5 bg-gradient-to-r from-red-600 via-amber-500 to-red-600 rounded-t-xl" />
 
-      {/* Row 1: Name, Shield, HP numbers */}
-      <div className="flex items-center justify-between mb-1.5">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <Skull className="w-4 h-4 text-red-400 flex-shrink-0" />
-          <h2 className="text-sm font-extrabold text-slate-100 truncate flex items-center gap-1.5">
-            {enemy.name}
-            {enemy.shield ? (
-              <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-900/80 text-blue-200 border border-blue-600 flex items-center gap-0.5">
-                <Shield className="w-2.5 h-2.5" /> +{enemy.shield}
-              </span>
-            ) : null}
-          </h2>
-        </div>
-
-        <div className="font-mono text-xs font-black">
-          <span className="text-red-400">{enemy.currentHp}</span>
-          <span className="text-slate-500 text-[11px]"> / {enemy.maxHp} HP</span>
-        </div>
-      </div>
-
-      {/* Row 2: Clean Health Bar */}
-      <div className="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-slate-700/60 mb-2 p-[1px]">
-        <div
-          className="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 rounded-full transition-all duration-300"
-          style={{ width: `${hpPercent}%` }}
-        />
-      </div>
-
-      {/* Row 3: Compact Telegraph Intent Pill */}
-      {telegraphed ? (
-        <div className="bg-red-950/50 border border-red-800/80 rounded-lg px-2.5 py-1.5 flex items-center justify-between gap-2 text-[11px]">
-          <div className="flex items-center gap-1.5 truncate text-slate-200">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 animate-pulse" />
-            <span className="truncate">
-              <strong className="text-amber-300 font-bold">[{telegraphed.abilityName}]</strong>
-              {' ➔ '}
-              <span className="text-slate-100 font-semibold">{targetName}</span>
-              {telegraphed.projectedDamage > 0 && (
-                <span className="text-red-300 font-mono font-bold"> (~{telegraphed.projectedDamage} DMG)</span>
-              )}
-            </span>
+        {/* Row 1: Name, Shield, HP numbers */}
+        <div className="flex items-center justify-between mb-1.5">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Skull className={`w-4 h-4 flex-shrink-0 ${isDead ? 'text-slate-500' : 'text-red-400'}`} />
+            <h2 className={`text-sm font-extrabold truncate flex items-center gap-1.5 ${isDead ? 'text-slate-400 line-through' : 'text-slate-100'}`}>
+              {enemy.name}
+              {enemy.shield ? (
+                <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-900/80 text-blue-200 border border-blue-600 flex items-center gap-0.5">
+                  <Shield className="w-2.5 h-2.5" /> +{enemy.shield}
+                </span>
+              ) : null}
+            </h2>
           </div>
 
-          <span className="text-[10px] font-mono text-amber-400 font-bold bg-slate-900/90 px-1.5 py-0.5 rounded border border-slate-700 flex-shrink-0">
-            Spd {telegraphed.speed}
-          </span>
+          <div className="font-mono text-xs font-black">
+            <span className={isDead ? 'text-slate-500' : 'text-red-400'}>{enemy.currentHp}</span>
+            <span className="text-slate-500 text-[11px]"> / {enemy.maxHp} HP</span>
+          </div>
         </div>
-      ) : (
-        <div className="text-[11px] text-slate-400 italic">Waiting for initiative...</div>
-      )}
+
+        {/* Row 2: Clean Health Bar */}
+        <div className="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-slate-700/60 mb-2 p-[1px]">
+          <div
+            className="h-full bg-gradient-to-r from-red-600 via-rose-500 to-amber-500 rounded-full transition-all duration-300"
+            style={{ width: `${hpPercent}%` }}
+          />
+        </div>
+
+        {/* Row 3: Compact Telegraph Intent Pill or Vanquished banner */}
+        {isDead ? (
+          <div className="bg-red-950/70 border border-red-800/80 rounded-lg px-2.5 py-1.5 flex items-center justify-center gap-1.5 text-[11px] font-black text-red-400 tracking-wider">
+            <Skull className="w-3.5 h-3.5 text-red-400 animate-pulse" />
+            <span>VANQUISHED</span>
+          </div>
+        ) : telegraphed ? (
+          <div className="bg-red-950/50 border border-red-800/80 rounded-lg px-2.5 py-1.5 flex items-center justify-between gap-2 text-[11px]">
+            <div className="flex items-center gap-1.5 truncate text-slate-200">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 animate-pulse" />
+              <span className="truncate">
+                <strong className="text-amber-300 font-bold">[{telegraphed.abilityName}]</strong>
+                {' ➔ '}
+                <span className="text-slate-100 font-semibold">{targetName}</span>
+                {telegraphed.projectedDamage > 0 && (
+                  <span className="text-red-300 font-mono font-bold"> (~{telegraphed.projectedDamage} DMG)</span>
+                )}
+              </span>
+            </div>
+
+            <span className="text-[10px] font-mono text-amber-400 font-bold bg-slate-900/90 px-1.5 py-0.5 rounded border border-slate-700 flex-shrink-0">
+              Spd {telegraphed.speed}
+            </span>
+          </div>
+        ) : (
+          <div className="text-[11px] text-slate-400 italic">Waiting for initiative...</div>
+        )}
+      </div>
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import {
   ClassType,
@@ -22,6 +22,11 @@ export function App() {
 
   const [socket, setSocket] = useState<Socket | null>(null);
   const [roomState, setRoomState] = useState<RoomState | null>(null);
+  const roomStateRef = useRef<RoomState | null>(null);
+  useEffect(() => {
+    roomStateRef.current = roomState;
+  }, [roomState]);
+
   const [currentPlayerId] = useState<string>(() => {
     return localStorage.getItem('daily_dungeon_player_id') || `p_${Math.random().toString(36).slice(2, 8)}`;
   });
@@ -77,15 +82,23 @@ export function App() {
   // Sequential playback for turn resolution
   const handleSequentialPlayback = async (batch: ResolutionBatch) => {
     const events = batch.orderedEvents;
+    const playbackBatchId = `batch-${Date.now()}`;
+
     for (let i = 0; i < events.length; i++) {
       const event = events[i];
       setActiveActorId(event.actorId);
       setActivePlaybackLog((prev) => [...prev, event.message]);
 
-      // Spawn floating numbers and unit impact visual effects
+      // Spawn floating numbers and unit impact visual effects OUTSIDE setState updater
+      triggerEventVisual(
+        event,
+        roomStateRef.current?.players || {},
+        `${playbackBatchId}-${i}-${event.actorId}-${event.targetId}`
+      );
+
+      // Apply incremental visual HP / Shield adjustments during playback
       setRoomState((current) => {
         if (!current) return current;
-        triggerEventVisual(event, current.players);
 
         // Apply incremental visual HP / Shield adjustments during playback
         const nextState = JSON.parse(JSON.stringify(current)) as RoomState;

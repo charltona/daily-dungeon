@@ -39,9 +39,9 @@ export default {
         },
       },
       animation: {
-        'float-combat': 'float-combat 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
-        'damage-shake': 'damage-shake 0.35s ease-in-out',
-        'heal-pulse': 'heal-pulse 0.5s ease-out',
+        'float-combat': 'float-combat 1.44s cubic-bezier(0.2, 0.8, 0.2, 1) forwards',
+        'damage-shake': 'damage-shake 0.42s ease-in-out',
+        'heal-pulse': 'heal-pulse 0.6s ease-out',
       },
     },
   },

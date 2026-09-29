@@ -1,5 +1,5 @@
 import * as cdk from 'aws-cdk-lib/core';
-import { Template } from 'aws-cdk-lib/assertions';
+import { Template, Match } from 'aws-cdk-lib/assertions';
 import { InfraStack } from '../lib/infra-stack';
 
 test('InfraStack synthesizes VPC, ECS Cluster, and ALB Fargate Service', () => {
@@ -69,5 +69,52 @@ test('InfraStack synthesizes VPC, ECS Cluster, and ALB Fargate Service', () => {
       Name: 'DailyDungeonGitHubDeployRoleArn',
     },
   });
+
+  template.hasResourceProperties('AWS::ECR::Repository', {
+    RepositoryName: 'daily-dungeon-app',
+    ImageScanningConfiguration: {
+      ScanOnPush: true,
+    },
+    ImageTagMutability: 'MUTABLE',
+  });
+
+  template.hasOutput('EcrRepositoryUri', {
+    Export: {
+      Name: 'DailyDungeonEcrRepositoryUri',
+    },
+  });
+
+  template.hasOutput('DailyDungeonServiceName', {
+    Export: {
+      Name: 'DailyDungeonServiceName',
+    },
+  });
 });
+
+test('InfraStack configures ECS task definition with ECR image when IMAGE_TAG is provided', () => {
+  const originalEnv = process.env.IMAGE_TAG;
+  try {
+    process.env.IMAGE_TAG = 'test-sha-12345';
+    const app = new cdk.App();
+    const stack = new InfraStack(app, 'TestDailyDungeonWithEcrTag');
+    const template = Template.fromStack(stack);
+
+    template.hasResourceProperties('AWS::ECS::TaskDefinition', {
+      ContainerDefinitions: Match.arrayWith([
+        Match.objectLike({
+          Name: 'web',
+          Image: {
+            'Fn::Join': [
+              '',
+              Match.arrayWith([':test-sha-12345']),
+            ],
+          },
+        }),
+      ]),
+    });
+  } finally {
+    process.env.IMAGE_TAG = originalEnv;
+  }
+});
+
 

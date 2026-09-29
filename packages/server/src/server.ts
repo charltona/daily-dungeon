@@ -15,7 +15,6 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { db, dailySeeds } from './db/index.js';
-import { checkDatabaseHealth } from './db/check.js';
 import { eq } from 'drizzle-orm';
 import {
   checkFlagsmithHealth,
@@ -46,14 +45,6 @@ function getDailyDungeonInfo() {
 }
 
 app.get('/api/health', async (req: Request, res: Response) => {
-  let dbStatus = 'disconnected';
-  try {
-    const isHealthy = await checkDatabaseHealth();
-    dbStatus = isHealthy ? 'connected' : 'error';
-  } catch {
-    dbStatus = 'unavailable';
-  }
-
   let flagsmithStatus = 'disconnected';
   try {
     const isFlagsmithHealthy = await checkFlagsmithHealth();
@@ -65,7 +56,6 @@ app.get('/api/health', async (req: Request, res: Response) => {
   res.json({
     status: 'ok',
     uptime: process.uptime(),
-    database: dbStatus,
     flagsmith: flagsmithStatus,
   });
 });

@@ -12,6 +12,18 @@ test('InfraStack synthesizes VPC, ECS Cluster, and ALB Fargate Service', () => {
     EnableDnsSupport: true,
   });
 
+  // Verify cost-optimization: 0 NAT Gateways provisioned
+  template.resourceCountIs('AWS::EC2::NatGateway', 0);
+
+  // Verify Fargate tasks run with public IP for free direct internet egress
+  template.hasResourceProperties('AWS::ECS::Service', {
+    NetworkConfiguration: Match.objectLike({
+      AwsvpcConfiguration: Match.objectLike({
+        AssignPublicIp: 'ENABLED',
+      }),
+    }),
+  });
+
   template.hasResourceProperties('AWS::ECS::Cluster', {
     ClusterName: 'daily-dungeon-cluster',
   });

@@ -4,13 +4,13 @@ import { InfraStack } from '../lib/infra-stack';
 
 test('InfraStack synthesizes VPC, ECS Cluster, and ALB Fargate Service', () => {
   const app = new cdk.App();
-  const stack = new InfraStack(app, 'TestDailyDungeonInfraStack');
-  const template = Template.fromStack(stack);
-
-  template.hasResourceProperties('AWS::EC2::VPC', {
-    EnableDnsHostnames: true,
-    EnableDnsSupport: true,
+  const stack = new InfraStack(app, 'TestDailyDungeonInfraStack', {
+    env: {
+      account: '825155104001',
+      region: 'ap-southeast-2',
+    },
   });
+  const template = Template.fromStack(stack);
 
   // Verify cost-optimization: 0 NAT Gateways provisioned
   template.resourceCountIs('AWS::EC2::NatGateway', 0);
@@ -108,7 +108,12 @@ test('InfraStack configures ECS task definition with ECR image when IMAGE_TAG is
   try {
     process.env.IMAGE_TAG = 'test-sha-12345';
     const app = new cdk.App();
-    const stack = new InfraStack(app, 'TestDailyDungeonWithEcrTag');
+    const stack = new InfraStack(app, 'TestDailyDungeonWithEcrTag', {
+      env: {
+        account: '825155104001',
+        region: 'ap-southeast-2',
+      },
+    });
     const template = Template.fromStack(stack);
 
     template.hasResourceProperties('AWS::ECS::TaskDefinition', {

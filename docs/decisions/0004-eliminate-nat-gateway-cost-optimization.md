@@ -19,7 +19,12 @@ For an early-stage/indie multiplayer project, this idle baseline overhead of ~\$
 ---
 
 ## Decision Outcome
-We decided to **eliminate the AWS NAT Gateway (`natGateways: 0`)** and deploy ECS Fargate tasks into **public subnets with assigned public IPs (`assignPublicIp: true`)**.
+We decided to **eliminate the AWS NAT Gateway (`natGateways: 0`)** by adopting the account's existing default VPC (`vpc-eb68978d`) and deploying ECS Fargate tasks into **public subnets with assigned public IPs (`assignPublicIp: true`)**.
+
+Using the existing default VPC:
+1. Reuses the pre-existing Internet Gateway (IGW) with 0 NAT Gateways.
+2. Completely avoids CloudFormation subnet CIDR collisions (e.g. `10.0.3.0/24 conflicts with another subnet`) during stack updates.
+3. Automatically tears down the previously created custom VPC, subnets, and NAT Gateway upon CloudFormation deployment.
 
 ### 1. Architectural Topology
 

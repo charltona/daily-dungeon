@@ -53,7 +53,7 @@ export class InfraStack extends cdk.Stack {
 
     const service = new ecsPatterns.ApplicationLoadBalancedFargateService(
       this,
-      'DailyDungeonService',
+      'DailyDungeonAppService',
       {
         cluster,
         memoryLimitMiB: 512,

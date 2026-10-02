@@ -1,4 +1,4 @@
-# ADR 0004: Elimination of AWS NAT Gateway for Fargate Egress Cost Optimization
+# ADR 0004: Elimination of AWS NAT Gateway & Adoption of Account Default VPC
 
 - **Status:** Accepted
 - **Date:** 2026-10-02
@@ -16,21 +16,23 @@ In the initial infrastructure setup, the VPC was provisioned with `natGateways: 
 
 For an early-stage/indie multiplayer project, this idle baseline overhead of ~\$36.50+/month represents 80–90% of the AWS monthly bill with zero game traffic.
 
+Furthermore, updating the existing stack in-place while altering VPC subnets caused:
+1. Subnet CIDR collisions (`10.0.3.0/24 conflicts with another subnet`) because CloudFormation provisions new subnets before destroying old ones.
+2. Load Balancer security group errors (`One or more security groups are invalid`) because AWS Application Load Balancers cannot migrate across VPCs in-place.
+
 ---
 
 ## Decision Outcome
-We decided to **eliminate the AWS NAT Gateway (`natGateways: 0`)** by adopting the account's existing default VPC (`vpc-eb68978d`) and deploying ECS Fargate tasks into **public subnets with assigned public IPs (`assignPublicIp: true`)**.
-
-Using the existing default VPC:
-1. Reuses the pre-existing Internet Gateway (IGW) with 0 NAT Gateways.
-2. Completely avoids CloudFormation subnet CIDR collisions (e.g. `10.0.3.0/24 conflicts with another subnet`) during stack updates.
-3. Automatically tears down the previously created custom VPC, subnets, and NAT Gateway upon CloudFormation deployment.
+We decided to:
+1. **Adopt the account's existing default VPC (`vpc-eb68978d`)** with `ec2.Vpc.fromLookup`.
+2. **Eliminate the AWS NAT Gateway (`natGateways: 0`)** by deploying ECS Fargate tasks into the default VPC's public subnets with assigned public IPs (`assignPublicIp: true`).
+3. **Recreate the ALB & Service construct (`DailyDungeonAppService`)**, ensuring CloudFormation provisions the new Load Balancer and Service cleanly in `vpc-eb68978d` before tearing down the old resources in the deprecated custom VPC.
 
 ### 1. Architectural Topology
 
 ```
                   ┌────────────────────────────────────────────────────────┐
-                  │                 AWS VPC (Virtual Cloud)                │
+                  │          AWS Default VPC (vpc-eb68978d)                │
                   │                                                        │
                   │   ┌────────────────────────────────────────────────┐   │
 Client Browser ───┼──►│        Application Load Balancer (ALB)         │   │
@@ -43,11 +45,6 @@ Client Browser ───┼──►│        Application Load Balancer (ALB)  
                   │   │                                                │   │
                   │   │   • Direct outbound egress via IGW ($0 cost)   │───┼──► Internet (ECR, CloudWatch, Flagsmith)
                   │   │   • Inbound strictly restricted to ALB SG      │   │
-                  │   └───────────────────────┬────────────────────────┘   │
-                  │                           │ (Private Local VPC Routing)│
-                  │   ┌───────────────────────▼────────────────────────┐   │
-                  │   │            AWS Aurora Serverless v2            │   │
-                  │   │           (Private Isolated Subnet)            │   │
                   │   └────────────────────────────────────────────────┘   │
                   └────────────────────────────────────────────────────────┘
 ```
@@ -55,12 +52,10 @@ Client Browser ───┼──►│        Application Load Balancer (ALB)  
 ### 2. Security & Network Model
 1. **Inbound Ingress:** ECS security groups strictly restrict ingress traffic to port 3001 sourced **only from the ALB security group**. Direct public internet requests hitting the task's public IP are dropped at the hypervisor packet filter.
 2. **Outbound Egress:** Image pulls from ECR, SSM secrets retrieval, CloudWatch logging, and Flagsmith SDK API requests route directly through the AWS Internet Gateway (IGW), which has **zero base hourly charge and zero per-GB gateway processing fee**.
-3. **Database Security:** Aurora Serverless v2 subnets are configured as `PRIVATE_ISOLATED`. They have no routes to the Internet Gateway or any NAT Gateway. The Fargate tasks in the public subnets connect to the database via internal private IP addresses (`10.0.x.x`), keeping the database completely shielded from the public internet.
 
 ---
 
 ## Consequences
 - **Positive:** Reduces fixed AWS idle infrastructure costs by ~\$33–\$36/month.
-- **Positive:** Zero latency or bandwidth bottleneck from NAT Gateway data processing.
-- **Neutral:** Fargate tasks consume a public IPv4 address billed at AWS standard public IPv4 rate (\$0.005/hr $\approx$ ~\$3.60/month per task), yielding a net savings of over ~\$32/month compared to NAT Gateway.
-- **Positive:** Zero change to client experience, WebSocket performance, or database isolation.
+- **Positive:** Reuses the existing default VPC, avoiding CIDR collisions and duplicate networking resources.
+- **Positive:** Brand-new ALB construct ensures clean CloudFormation deployment without cross-VPC security group binding errors.

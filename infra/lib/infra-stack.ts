@@ -14,25 +14,10 @@ export class InfraStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // 1. AWS VPC for ECS tasks and private Aurora DB connectivity (ADR 0003)
-    // Configured with 0 NAT Gateways to eliminate idle AWS costs (~$36/mo).
-    // Fargate tasks run in public subnets with public IP for free IGW egress,
-    // while isolated subnets are reserved for private database connectivity.
-    const vpc = new ec2.Vpc(this, 'DailyDungeonVpc', {
-      maxAzs: 2,
-      natGateways: 0,
-      subnetConfiguration: [
-        {
-          cidrMask: 24,
-          name: 'Public',
-          subnetType: ec2.SubnetType.PUBLIC,
-        },
-        {
-          cidrMask: 24,
-          name: 'Isolated',
-          subnetType: ec2.SubnetType.PRIVATE_ISOLATED,
-        },
-      ],
+    // 1. Existing AWS VPC (vpc-eb68978d) for ECS tasks and compute workloads.
+    // Uses the existing default VPC with free direct Internet Gateway egress (0 NAT Gateways).
+    const vpc = ec2.Vpc.fromLookup(this, 'DailyDungeonVpc', {
+      vpcId: 'vpc-eb68978d',
     });
 
     // 2. ECS Cluster

@@ -29,8 +29,14 @@ const clientDistPath = path.resolve(__dirname, '../../client/dist');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+import { authRouter } from './routes/auth.js';
+import { characterRouter } from './routes/character.js';
+
 app.use(cors());
 app.use(express.json());
+
+app.use('/api/auth', authRouter);
+app.use('/api/characters', characterRouter);
 
 // Daily Dungeon Seed (deterministic daily rotation fallback)
 function getDailyDungeonInfo() {
@@ -130,8 +136,27 @@ const roomManager = new RoomManager({
   },
 });
 
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-do-not-use-in-prod';
+
+io.use((socket, next) => {
+  const token = socket.handshake.auth.token;
+  if (!token) {
+    return next(new Error('Authentication error: No token provided'));
+  }
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    // Attach userId to the socket object if needed
+    (socket as any).userId = decoded.userId;
+    next();
+  } catch (err) {
+    next(new Error('Authentication error: Invalid token'));
+  }
+});
+
 io.on('connection', (socket: Socket) => {
-  console.log(`[Socket] Connected: ${socket.id}`);
+  console.log(`[Socket] Connected: ${socket.id} (User: ${(socket as any).userId})`);
 
   socket.on('room:join', (payload: ClientJoinPayload) => {
     const { roomId, character } = payload;

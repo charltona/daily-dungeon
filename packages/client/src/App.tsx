@@ -14,6 +14,8 @@ import { PartyCard } from './components/PartyCard.js';
 import { ActionBar } from './components/ActionBar.js';
 import { CombatFeed } from './components/CombatFeed.js';
 import { LobbyScreen } from './components/LobbyScreen.js';
+import { LandingScreen } from './components/LandingScreen.js';
+import { CharacterSelectScreen } from './components/CharacterSelectScreen.js';
 import { EndGameScreen } from './components/EndGameScreen.js';
 import { useCombatVisuals } from './hooks/useCombatVisuals.js';
 
@@ -23,13 +25,47 @@ export function App() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [roomState, setRoomState] = useState<RoomState | null>(null);
   const roomStateRef = useRef<RoomState | null>(null);
+  
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('dd_token'));
+  const [user, setUser] = useState<any | null>(() => {
+    const u = localStorage.getItem('dd_user');
+    return u && u !== 'undefined' ? JSON.parse(u) : null;
+  });
+  const [character, setCharacter] = useState<any | null>(() => {
+    const c = localStorage.getItem('dd_character');
+    return c && c !== 'undefined' ? JSON.parse(c) : null;
+  });
+
+  const currentPlayerId = user?.id || '';
+
+  const handleLoginSuccess = (newToken: string, newUser: any, newCharacter?: any) => {
+    setToken(newToken);
+    setUser(newUser);
+    if (newCharacter) setCharacter(newCharacter);
+    localStorage.setItem('dd_token', newToken);
+    localStorage.setItem('dd_user', JSON.stringify(newUser));
+    if (newCharacter) localStorage.setItem('dd_character', JSON.stringify(newCharacter));
+  };
+
+  const handleCharacterCreated = (newChar: any) => {
+    setCharacter(newChar);
+    localStorage.setItem('dd_character', JSON.stringify(newChar));
+  };
+
+  const handleLogout = () => {
+    setToken(null);
+    setUser(null);
+    setCharacter(null);
+    localStorage.removeItem('dd_token');
+    localStorage.removeItem('dd_user');
+    localStorage.removeItem('dd_character');
+    if (socket) socket.disconnect();
+  };
+
   useEffect(() => {
     roomStateRef.current = roomState;
   }, [roomState]);
 
-  const [currentPlayerId] = useState<string>(() => {
-    return localStorage.getItem('daily_dungeon_player_id') || `p_${Math.random().toString(36).slice(2, 8)}`;
-  });
   const [activeActorId, setActiveActorId] = useState<string | undefined>(undefined);
   const [activePlaybackLog, setActivePlaybackLog] = useState<string[]>([]);
   const [isEndModalOpen, setIsEndModalOpen] = useState(false);
@@ -53,10 +89,11 @@ export function App() {
 
   // Socket initialization
   useEffect(() => {
-    localStorage.setItem('daily_dungeon_player_id', currentPlayerId);
+    if (!token || !currentPlayerId) return;
 
     const s = io(window.location.origin, {
       transports: ['websocket', 'polling'],
+      auth: { token },
     });
 
     s.on('connect', () => {
@@ -77,7 +114,7 @@ export function App() {
     return () => {
       s.disconnect();
     };
-  }, [currentPlayerId]);
+  }, [currentPlayerId, token]);
 
   // Sequential playback for turn resolution
   const handleSequentialPlayback = async (batch: ResolutionBatch) => {
@@ -152,11 +189,10 @@ export function App() {
     });
   };
 
-  const handleJoinRoom = (roomId: string, name: string, classType: ClassType) => {
-    if (!socket) return;
-    const displayName = classType.charAt(0).toUpperCase() + classType.slice(1);
-    const character = createCharacter(currentPlayerId, displayName, classType);
-    socket.emit('room:join', { roomId, character });
+  const handleJoinRoom = (roomId: string) => {
+    if (!socket || !character) return;
+    const combatCharacter = createCharacter(currentPlayerId, character.name, character.classType);
+    socket.emit('room:join', { roomId, character: combatCharacter });
   };
 
   const handleStartGame = (roomId: string) => {
@@ -190,6 +226,23 @@ export function App() {
   const showEndGame = roomState?.status === 'VICTORY' || roomState?.status === 'DEFEAT';
   const isHost = roomState?.hostPlayerId === currentPlayerId;
 
+  // If not authenticated, show landing screen
+  if (!token || !user) {
+    return <LandingScreen onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  // If authenticated but no character, show character creation
+  if (!character) {
+    return (
+      <CharacterSelectScreen
+        user={user}
+        token={token}
+        onCharacterCreated={handleCharacterCreated}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
   // If not joined to any room yet or currently in Lobby:
   if (!roomState || roomState.status === 'LOBBY') {
     return (
@@ -199,6 +252,9 @@ export function App() {
           onJoinRoom={handleJoinRoom}
           onStartGame={handleStartGame}
           currentPlayerId={currentPlayerId}
+          user={user}
+          character={character}
+          onLogout={handleLogout}
         />
       </div>
     );

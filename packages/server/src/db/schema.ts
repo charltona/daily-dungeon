@@ -8,6 +8,7 @@ import {
   jsonb,
   date,
   index,
+  boolean,
 } from 'drizzle-orm/pg-core';
 
 // 1. Users Table (ADR 0001 & ADR 0002)
@@ -17,6 +18,7 @@ export const users = pgTable('users', {
   email: varchar('email', { length: 255 }).unique(),
   oauthProvider: varchar('oauth_provider', { length: 32 }),
   oauthId: varchar('oauth_id', { length: 255 }).unique(),
+  isGuest: boolean('is_guest').default(false).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   lastLoginAt: timestamp('last_login_at', { withTimezone: true }).defaultNow(),
 });
